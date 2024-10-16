@@ -29,6 +29,18 @@ class BG:
     def draw(self):
         self.image.draw(400, 300)
 
+class Ground:
+    def __init__(self):
+        self.image = load_image("ground.png")
+        if self.image is None:
+            print("Image failed to load")
+
+    def update(self):
+        pass
+
+    def draw(self):
+        self.image.draw(400, 200)
+
 class Player:
     def __init__(self):
         self.x, self.y = 400, 30
@@ -60,13 +72,17 @@ def reset_world():
     global chara
     global bg
     global player
+    global ground
+
     running = True
     world = []
 
     player = Player()
     bg = BG()
     chara = Character()
+    ground = Ground()
 
+    world.append(ground)
     world.append(bg)
     world.append(chara)
     world.append(player)

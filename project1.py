@@ -6,26 +6,27 @@ class Character:
     def __init__(self):
         self.x, self.y = 400,300
         self.frame = 0
-        self.image = load_image("1.png")
+        self.action = 3
+        self.image = load_image("run_animation.png")
 
     def handle_event(self):
-        self.frame = 0
+        pass
 
     def update(self):
         self.frame = (self.frame + 1) % 8
 
     def draw(self):
-        self.image.clip_draw(self.frame * 100, 1000, 100, 100, self.x, self.y)
+        self.image.clip_draw(self.frame * 100, self.action * 100, 100, 100, self.x, self.y)
 
 class BG:
     def __init__(self):
-        self.image = load_image("bg.png")
+        self.image = load_image("run_animation.png")
 
     def update(self):
         pass
 
     def draw(self):
-        self.image.draw(100, 100)
+        self.image.draw(400, 30)
 
 
 def handle_events():
@@ -45,6 +46,7 @@ def reset_world():
     global bg
 
     running = True
+
     world = []
 
     bg = BG()
@@ -65,7 +67,8 @@ def render_world():
     update_world()
     pass
 
-open_canvas(1200,800)
+open_canvas()
+
 reset_world()
 # game loop
 while running:

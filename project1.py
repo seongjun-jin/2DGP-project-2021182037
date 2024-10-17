@@ -1,60 +1,32 @@
 from pico2d import *
-
-class Character:
-    def __init__(self):
-        self.x, self.y = 400,300
-        self.frame = 0
-        self.image = load_image("1.png")
-        if self.image is None:
-            print("Image failed to load")
-
-    def handle_event(self):
-        self.frame = 0
-
-    def update(self):
-        self.frame = (self.frame + 1) % 8
-
-    def draw(self):
-        self.image.clip_draw(self.frame * 75, 2700, 75, 105, self.x, self.y)
-
-class BG:
-    def __init__(self):
-        self.image = load_image("bg.png")
-        if self.image is None:
-            print("Image failed to load")
-
-    def update(self):
-        pass
-
-    def draw(self):
-        self.image.draw(400, 300)
-
-class Ground:
-    def __init__(self):
-        self.image = load_image("ground.png")
-        if self.image is None:
-            print("Image failed to load")
-
-    def update(self):
-        pass
-
-    def draw(self):
-        self.image.draw(400, 200)
+from Boshi import Character
+from Background import BG
+from Ground import Ground
+#from Player import Player
+import random
 
 class Player:
     def __init__(self):
-        self.x, self.y = 400, 30
+        self.x, self.y = 400, 80
         self.frame = 0
         self.image = load_image("player.png")
+        self.dir = 0
+        self.run = False
+        self.idle = True
+        self.speed = 5
 
     def handle_event(self):
         self.frame = 0
 
     def update(self):
         self.frame = (self.frame + 1) % 2
+        self.x -= self.dir * self.speed
 
     def draw(self):
-        self.image.clip_draw(self.frame * 20, 40, 20, 20, self.x, self.y)
+        if self.idle:
+            self.image.clip_draw(self.frame * 20, 40, 20, 20, self.x, self.y)
+        elif self.run:
+            self.image.clip_draw(self.frame * 20, 0, 20, 20, self.x, self.y)
 
 def handle_events():
     global running
@@ -65,6 +37,24 @@ def handle_events():
             running = False
         elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
             running = False
+        elif event.type == SDL_KEYDOWN and event.key == SDLK_LEFT:
+            player.idle = False
+            player.run = True
+            player.dir += 1
+        elif event.type == SDL_KEYDOWN and event.key == SDLK_RIGHT:
+            player.idle = False
+            player.run = True
+            player.dir -= 1
+        elif event.type == SDL_KEYUP and event.key == SDLK_LEFT:
+            player.idle = True
+            player.run = False
+            player.dir -= 1
+        elif event.type == SDL_KEYUP and event.key == SDLK_RIGHT:
+            player.idle = True
+            player.run = False
+            player.dir += 1
+
+
 
 def reset_world():
     global running

@@ -2,7 +2,7 @@ from pico2d import *
 
 class BG:
     def __init__(self):
-        self.image = load_image("bg.png")
+        self.image = load_image("origbig.png")
         if self.image is None:
             print("Image failed to load")
 
@@ -10,4 +10,4 @@ class BG:
         pass
 
     def draw(self):
-        self.image.draw(400, 300)
+        self.image.clip_draw(0, 0, 2300, 1300, 400, 300, 1500, 1000)

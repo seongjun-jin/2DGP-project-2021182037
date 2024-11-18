@@ -1,18 +1,14 @@
-#from Lecture14_Game_Framework import title_mode, item_mode
 from pico2d import *
 
 import game_world
 import game_framework
-from Player import Player
 from Ground import Ground
-from Background import BG
-import bossroom1_mode
+from bossroom1_bg import B1_BG
 from bonfire import bonfire
 from Portal import portal
 from Boss1 import boss
+import Player
 import title_mode
-
-
 
 def update():
     game_world.update()
@@ -42,35 +38,33 @@ def handle_events():
 
 def init():
     global player
-    global portal
-    global bonfire
-
-
-    player = Player()
+    global boss
+    if player is None:  # 이전 모드에서 전달된 객체가 없으면 새로 생성
+        print("Player object not passed, creating a new one.")
+        player = Player.Player()  # Player 모듈에서 객체 생성
+    else:
+        print("Player object received from previous mode.")
     game_world.add_object(player, 2)
+
+        # 플레이어를 게임 월드에 추가
+    game_world.add_object(player, 2)
+
+    boss = boss()
+    game_world.add_object(boss, 2)
 
     ground = Ground()
     game_world.add_object(ground, 1)
 
-    portal = portal(100, 70, 50, 50, bossroom1_mode, 400, 50)
-    game_world.add_object(portal, 1)
-
-    bonfire = bonfire()
-    game_world.add_object(bonfire, 1)
-
-    background = BG()
+    background = B1_BG()
     game_world.add_object(background, 0)
 
-    game_world.add_collision_pair('player:portal', player, None)
-    game_world.add_collision_pair('player:portal', None, portal)
+    game_world.add_collision_pair('boss:player', player, None)
+    game_world.add_collision_pair('boss:player', None, boss)
 
-    game_world.add_collision_pair('player:bonfire', player, None)
-    game_world.add_collision_pair('player:bonfire', None, bonfire)
-
+    game_world.add_collision_pair('boss:attack', boss, None)
 
 def pause():
     pass
 
 def resume():
     pass
-

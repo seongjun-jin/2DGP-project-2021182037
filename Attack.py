@@ -38,7 +38,6 @@ class Slash:
             print(f'boss.is_hit = {boss.is_hit}')
             if self.attacker:
                 self.attacker.is_attacking = False
-        draw_rectangle(*self.get_bb())
 
     def update(self):
         self.frame = (self.frame + FRAMES_PER_ACTION*ACTION_PER_TIME*game_framework.frame_time) % FRAMES_PER_ACTION

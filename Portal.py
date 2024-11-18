@@ -13,14 +13,18 @@ FRAMES_PER_ACTION = 8
 
 
 class portal:
-    def __init__(self):
-        self.x, self.y = 100, 70
+    def __init__(self, x, y, width, height, target_map,target_x, target_y):
+        self.x, self.y = x, y
         self.image = load_image("portal.png")
         self.font = load_font('ENCR10B.TTF', 16)
         self.is_guide = False
+        self.target_map = target_map
+        self.target_x = target_x
+        self.target_y = target_y
+        self.frame = 0
         if self.image is None:
             print("이미지를 로드하지 못했습니다. 'portal.png' 경로를 확인하세요.")
-        self.frame = 0
+            self.frame = 0
 
     def update(self):
         self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 16
@@ -34,17 +38,14 @@ class portal:
                 self.font.draw(self.x - 10, self.y + 50, f'PRESS DOWN key', (255, 255, 0))
             else:
                 self.image.clip_draw(0 + int(self.frame) * 63, 85, 63, 85, self.x, self.y, 50, 50)
+        # 디버깅용 사각형 그리기
         draw_rectangle(*self.get_bb())
 
     def get_bb(self):
-        #하나의 튜플을 리턴
-        #상태별로 바운딩 박스 바뀌게
-        return self.x - 20, self.y -30, self.x + 20, self.y + 30
-        pass
+        return self.x - 20, self.y - 30, self.x + 20, self.y + 30
 
     def handle_collision(self, group, other):
-        # fill here
+        print(f"Collision detected with group: {group}, other: {other}")
         if group == 'player:portal':
             self.is_guide = True
 
-            pass

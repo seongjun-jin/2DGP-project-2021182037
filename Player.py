@@ -3,7 +3,7 @@ from State_Machine import *
 import game_world
 from Attack import Slash
 import game_framework
-from sdl2.ext.particles import Particle
+import bossroom1_mode
 #직접적인 공간수치가 아닌 프레임숫자, 시간으로 표현을 해라
 
 
@@ -120,7 +120,8 @@ class Player:
         self.is_attacking = False
         self.is_dead = False
         self.is_falling = False
-        self.dark_alpha = 0
+        self.current_portal = None
+        self.enter_bossroom = False
         self.state_machine = StateMachine(self)
         self.state_machine.start(Idle)
         self.state_machine.set_transitions({
@@ -131,6 +132,9 @@ class Player:
     def handle_event(self, event):
         if not self.is_dead:
             self.state_machine.add_event(['INPUT', event])
+        if self.current_portal and event.type == SDL_KEYDOWN and event.key == SDLK_DOWN:
+            self.enter_portal(self.current_portal)
+
 
     def update(self):
         if self.is_dead:
@@ -162,7 +166,6 @@ class Player:
         if self.is_dead:
             self.image.clip_composite_draw(int(self.frame) * 20, 0, 20, 20, math.radians(90), '', self.x, self.y, 20, 20)
             self.death_font.draw(200, 300, "YOU DIED", (255, 0, 0))
-            pico2d.fill_rectangle(0, 0, 800, 600, (0, 0, 0, self.dark_alpha))
         else:
             self.state_machine.draw()
             self.font.draw(self.x - 10, self.y + 50, f'{self.hp:02d}', (255, 255, 0))
@@ -192,7 +195,6 @@ class Player:
             game_world.add_collision_pair('boss:attack', None, slash)
 
     def die(self):
-        """Handles the player's death."""
         self.is_dead = True
         self.is_falling = True
         self.dir = 0
@@ -213,6 +215,22 @@ class Player:
             self.hit_timer = 1
         if group == 'player:bonfire':
             self.heal = True
+        if group == 'player:portal':
+            self.current_portal = other
+
+    def enter_portal(self, portal):
+        """포탈을 통해 다른 맵으로 이동"""
+        if portal.target_map:
+            print(f"Entering portal to {portal.target_map}!")
+            # 플레이어 위치 갱신
+            self.x = portal.target_x
+            self.y = portal.target_y
+
+            # 모드 전환 전에 플레이어 객체 전달
+            portal.target_map.player = self  # 새 모드에 플레이어 전달
+
+            # 모드 전환
+            game_framework.change_mode(portal.target_map)
 
 
 

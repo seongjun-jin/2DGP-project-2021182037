@@ -1,5 +1,5 @@
 import time
-
+import game_world
 from game_world import world
 
 running = None
@@ -13,6 +13,7 @@ def change_mode(mode):
         stack[-1].finish()
         # remove the current mode
         stack.pop()
+    #game_world.clear_collisions()
     stack.append(mode)
     mode.init()
 

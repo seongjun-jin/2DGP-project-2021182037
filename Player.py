@@ -117,8 +117,6 @@ class Player:
         self.hit_timer = 0
         self.velocity_y = 0
         self.is_jumping = 2
-        self.is_invincibility_time = 0
-        self.is_invincibility = False
         self.is_attacking = False
         self.state_machine = StateMachine(self)
         self.state_machine.start(Idle)

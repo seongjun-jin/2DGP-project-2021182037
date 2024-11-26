@@ -143,10 +143,7 @@ class Player:
                 if self.y <= 50:
                     self.y = 50
                     self.is_falling = False
-            if self.dark_alpha < 128:
-                self.dark_alpha += 2
             return
-
         self.state_machine.update()
         if self.is_jumping >= 0:
             self.apply_gravity()
@@ -225,11 +222,7 @@ class Player:
             # 플레이어 위치 갱신
             self.x = portal.target_x
             self.y = portal.target_y
-
-            # 모드 전환 전에 플레이어 객체 전달
-            portal.target_map.player = self  # 새 모드에 플레이어 전달
-
-            # 모드 전환
+            portal.target_map.player = self
             game_framework.change_mode(portal.target_map)
 
 

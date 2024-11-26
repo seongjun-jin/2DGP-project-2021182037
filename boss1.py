@@ -1,7 +1,12 @@
+from asyncio import Runner
+from logging import root
+
 from pico2d import *
 import game_framework
 import random
 import game_world
+from behavior_tree import BehaviorTree, Action, Sequence, Condition, Selector
+import time
 #
 PIXEL_PER_METER = (10.0 / 0.3)  # 10 pixel 30 cm
 RUN_SPEED_KMPH = 20.0  # Km / Hour
@@ -28,15 +33,9 @@ class boss:
         self.is_hit_timer = 0
         self.face_dir = 1
         self.speed = 5
+        self.tx, self.ty = 0,0
         self.is_beaten = False
-        self.pattern0 = True
-        self.pattern1 = False
-        self.pattern2 = False
-        self.pattern3 = False
-        self.pattern4 = False
-        self.pattern5 = False
-        self.pattern_count = 0
-        self.pattern = 0
+        self.build_behavior_tree()
         if self.image is None:
             print("Image failed to load")
 
@@ -51,23 +50,8 @@ class boss:
                 self.is_hit = False
         if self.hp == 0:
             self.is_beaten = True
-        if self.pattern0 == True:
-            self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % FRAMES_PER_ACTION
-            self.x += RUN_SPEED_PPS * self.face_dir * game_framework.frame_time * self.speed
-            if self.x >= 800:
-                self.face_dir = -1
-                self.speed -= 1
-                if self.x == 800:
-                    self.speed = 0
-
-            elif self.x <= 0:
-                self.face_dir = 1
-                self.speed -= 1
-                if self.x == 0:
-                    self.speed = 0
-
-            if  self.speed == 0:
-                self.speed = 5
+        if self.bt:
+            self.bt.run()
 
 
 
@@ -98,59 +82,88 @@ class boss:
             self.hp -= 1
             self.is_hit = True
             self.is_hit_timer = 0.5
+    def move_slightly_to(self, tx, ty):
+        self.dir = math.atan2(ty - self.y, tx - self.x)
+        distance = RUN_SPEED_PPS * game_framework.frame_time * 10
+        self.x += distance * math.cos(self.dir)
+        self.y += distance * math.sin(self.dir)
 
-    def boss_pattern(self):
-        if self.pattern == 0:
-            self.pattern0 = True
-            self.pattern1 = False
-            self.pattern2 = False
-            self.pattern3 = False
-            self.pattern4 = False
-            self.pattern = random.randint(0, 4)
-            self.pattern_count += 1
+    def distance_less_than(self, x1, y1, x2, y2, r):
+        distance2 = (x1 - x2) ** 2 + (y1 - y2) ** 2
+        return distance2 < (PIXEL_PER_METER * r) ** 2
 
-        elif self.pattern == 1:
-            self.pattern0 = False
-            self.pattern1 = True
-            self.pattern2 = False
-            self.pattern3 = False
-            self.pattern4 = False
-            self.pattern = random.randint(0, 4)
-            self.pattern_count += 1
+    def move_to_left_up(self):
+        self.tx, self.ty = 25, 600
+        self.move_slightly_to(self.tx, self.ty)
+        if self.distance_less_than(self.tx, self.ty, self.x, self.y, 7):
+            if not hasattr(self, 'wait_start'):
+                self.wait_start = time.time()  # 대기 시작 시간 기록
+            elif time.time() - self.wait_start >= 1.0:  # 1초 대기
+                del self.wait_start  # 대기 완료 후 초기화
+                return BehaviorTree.SUCCESS
+            return BehaviorTree.RUNNING
+        return BehaviorTree.RUNNING
 
-        elif self.pattern == 2:
-            self.pattern0 = False
-            self.pattern1 = False
-            self.pattern2 = True
-            self.pattern3 = False
-            self.pattern4 = False
-            self.pattern = random.randint(0, 4)
-            self.pattern_count += 1
 
-        elif self.pattern == 3:
-            self.pattern0 = False
-            self.pattern1 = False
-            self.pattern2 = False
-            self.pattern3 = True
-            self.pattern4 = False
-            self.pattern = random.randint(0, 4)
-            self.pattern_count += 1
+    def move_to_right_up(self):
+        self.tx, self.ty = 800, 600
+        self.move_slightly_to(self.tx, self.ty)
+        if self.distance_less_than(self.tx, self.ty, self.x, self.y, 7):
+            return BehaviorTree.SUCCESS
+        return BehaviorTree.RUNNING
 
-        elif self.pattern == 4:
-            self.pattern0 = False
-            self.pattern1 = False
-            self.pattern2 = False
-            self.pattern3 = False
-            self.pattern4 = True
-            self.pattern = random.randint(0, 4)
-            self.pattern_count += 1
+    def move_to_left_down(self):
+        self.tx, self.ty = 25, 25
+        self.move_slightly_to(self.tx, self.ty)
+        if self.distance_less_than(self.tx, self.ty, self.x, self.y, 7):
+            return BehaviorTree.SUCCESS
+        return BehaviorTree.RUNNING
 
-        if self.pattern_count == 5:
-            self.pattern0 = False
-            self.pattern1 = False
-            self.pattern2 = False
-            self.pattern3 = False
-            self.pattern4 = False
-            self.pattern5 = True
-            self.pattern_count = 0
-            self.pattern = random.randint(0, 4)
+    def move_to_right_down(self):
+        self.tx, self.ty = 800, 25
+        self.move_slightly_to(self.tx, self.ty)
+        if self.distance_less_than(self.tx, self.ty, self.x, self.y, 7):
+            return BehaviorTree.SUCCESS
+        return BehaviorTree.RUNNING
+
+    def move_to_center(self):
+        self.tx, self.ty = 400, 300
+        self.move_slightly_to(self.tx, self.ty)
+        if self.distance_less_than(self.tx, self.ty, self.x, self.y, 7):
+            return BehaviorTree.SUCCESS
+        return BehaviorTree.RUNNING
+
+
+    def split_fire_ball(self): #왼쪽 위에서 파이어볼을 5갈래로 흩부림
+
+        pass
+    def fireball_rain(self): #하늘에서 불비가 내려옴
+        pass
+    def split_in_center(self): #화면중앙에서 360도로 파이어볼 발사
+        pass
+    def move_and_fire(self): #왼쪽위-> 오른쪽위-> 오른쪽아래->왼쪽 아래로 이동해 추적하는 파이어볼 1기씩 생성
+        pass
+    def fire_wave(self): #거대한 파이어볼을 떨어뜨려 불의 파도를 만듦
+        pass
+    def final_flash(self): #거대한 빔 발사
+        pass
+    def break_time(self): #쉼
+        pass
+
+    def build_behavior_tree(self):
+        # 각 행동을 Action 노드로 래핑
+        a1 = Action('왼쪽 위로 이동', self.move_to_left_up)
+        a2 = Action('오른쪽 위로 이동', self.move_to_right_up)
+        a3 = Action('왼쪽 아래로 이동', self.move_to_left_down)
+        a4 = Action('오른쪽 아래로 이동', self.move_to_right_down)
+        a5 = Action('가운데로 이동', self.move_to_center)
+
+        # Sequence 노드에 Action 리스트 추가
+
+
+            # Sequence 노드 생성
+        root = Sequence('배회 후 가운데로 이동', a1, a2, a3,a4,a5)
+        # BehaviorTree 초기화
+
+        # BehaviorTree에 루트 설정
+        self.bt = BehaviorTree(root)

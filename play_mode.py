@@ -11,6 +11,7 @@ from bonfire import bonfire
 from Portal import portal
 from Boss1 import boss
 import title_mode
+import server
 
 
 
@@ -37,7 +38,7 @@ def handle_events():
         elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
             game_framework.change_mode(title_mode)
         else:
-            player.handle_event(event)
+            server.player.handle_event(event)
 
 
 def init():
@@ -46,8 +47,8 @@ def init():
     global bonfire
 
 
-    player = Player()
-    game_world.add_object(player, 2)
+    server.player = Player()
+    game_world.add_object(server.player, 2)
 
     ground = Ground()
     game_world.add_object(ground, 1)
@@ -61,10 +62,12 @@ def init():
     background = BG()
     game_world.add_object(background, 0)
 
-    game_world.add_collision_pair('player:portal', player, None)
+    game_world.add_collision_pair('player:attack', server.player, None)
+
+    game_world.add_collision_pair('player:portal', server.player, None)
     game_world.add_collision_pair('player:portal', None, portal)
 
-    game_world.add_collision_pair('player:bonfire', player, None)
+    game_world.add_collision_pair('player:bonfire', server.player, None)
     game_world.add_collision_pair('player:bonfire', None, bonfire)
 
 

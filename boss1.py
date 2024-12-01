@@ -1,12 +1,15 @@
 from asyncio import Runner
 from logging import root
 
+import server
 from pico2d import *
 import game_framework
 import random
 import game_world
 from behavior_tree import BehaviorTree, Action, Sequence, Condition, Selector
 import time
+import math
+from fireball import fireball
 #
 PIXEL_PER_METER = (10.0 / 0.3)  # 10 pixel 30 cm
 RUN_SPEED_KMPH = 20.0  # Km / Hour
@@ -28,6 +31,7 @@ class boss:
         self.frame = 0
         self.image = load_image("1.png")
         self.hp = 5
+        self.Max_hp = 5
         self.font = load_font('ENCR10B.TTF', 16)
         self.is_hit = False
         self.is_hit_timer = 0
@@ -88,56 +92,96 @@ class boss:
         self.x += distance * math.cos(self.dir)
         self.y += distance * math.sin(self.dir)
 
+        self.x = clamp(50, self.x, 700)
+        self.y = clamp(50, self.y, 500)
+
     def distance_less_than(self, x1, y1, x2, y2, r):
-        distance2 = (x1 - x2) ** 2 + (y1 - y2) ** 2
-        return distance2 < (PIXEL_PER_METER * r) ** 2
+            distance2 = (x1 - x2) ** 2 + (y1 - y2) ** 2
+            return distance2 < (PIXEL_PER_METER * r) ** 2
 
     def move_to_left_up(self):
-        self.tx, self.ty = 25, 600
-        self.move_slightly_to(self.tx, self.ty)
-        if self.distance_less_than(self.tx, self.ty, self.x, self.y, 7):
-            if not hasattr(self, 'wait_start'):
-                self.wait_start = time.time()  # 대기 시작 시간 기록
-            elif time.time() - self.wait_start >= 1.0:  # 1초 대기
-                del self.wait_start  # 대기 완료 후 초기화
-                return BehaviorTree.SUCCESS
+            self.tx, self.ty = 25, 600
+            self.move_slightly_to(self.tx, self.ty)
+            if self.distance_less_than(self.tx, self.ty, self.x, self.y, 7):
+                if not hasattr(self, 'wait_start'):
+                    self.wait_start = time.time()  # 대기 시작 시간 기록
+                elif time.time() - self.wait_start >= 0.5:  # 1초 대기
+                    del self.wait_start  # 대기 완료 후 초기화
+                    return BehaviorTree.SUCCESS
+                return BehaviorTree.RUNNING
             return BehaviorTree.RUNNING
-        return BehaviorTree.RUNNING
 
 
     def move_to_right_up(self):
         self.tx, self.ty = 800, 600
         self.move_slightly_to(self.tx, self.ty)
         if self.distance_less_than(self.tx, self.ty, self.x, self.y, 7):
-            return BehaviorTree.SUCCESS
+            if not hasattr(self, 'wait_start'):
+                self.wait_start = time.time()  # 대기 시작 시간 기록
+            elif time.time() - self.wait_start >= 0.5:  # 1초 대기
+                del self.wait_start  # 대기 완료 후 초기화
+                return BehaviorTree.SUCCESS
+            return BehaviorTree.RUNNING
         return BehaviorTree.RUNNING
 
     def move_to_left_down(self):
         self.tx, self.ty = 25, 25
         self.move_slightly_to(self.tx, self.ty)
         if self.distance_less_than(self.tx, self.ty, self.x, self.y, 7):
-            return BehaviorTree.SUCCESS
+            if not hasattr(self, 'wait_start'):
+                self.wait_start = time.time()  # 대기 시작 시간 기록
+            elif time.time() - self.wait_start >= 0.5:  # 1초 대기
+                del self.wait_start  # 대기 완료 후 초기화
+                return BehaviorTree.SUCCESS
+            return BehaviorTree.RUNNING
         return BehaviorTree.RUNNING
 
     def move_to_right_down(self):
         self.tx, self.ty = 800, 25
         self.move_slightly_to(self.tx, self.ty)
         if self.distance_less_than(self.tx, self.ty, self.x, self.y, 7):
-            return BehaviorTree.SUCCESS
+            if not hasattr(self, 'wait_start'):
+                self.wait_start = time.time()  # 대기 시작 시간 기록
+            elif time.time() - self.wait_start >= 0.5:  # 1초 대기
+                del self.wait_start  # 대기 완료 후 초기화
+                return BehaviorTree.SUCCESS
+            return BehaviorTree.RUNNING
         return BehaviorTree.RUNNING
 
     def move_to_center(self):
         self.tx, self.ty = 400, 300
         self.move_slightly_to(self.tx, self.ty)
         if self.distance_less_than(self.tx, self.ty, self.x, self.y, 7):
-            return BehaviorTree.SUCCESS
+            if not hasattr(self, 'wait_start'):
+                self.wait_start = time.time()  # 대기 시작 시간 기록
+            elif time.time() - self.wait_start >= 0.5:  # 1초 대기
+                del self.wait_start  # 대기 완료 후 초기화
+                return BehaviorTree.SUCCESS
+            return BehaviorTree.RUNNING
         return BehaviorTree.RUNNING
 
+    def split_fire_ball(self):
+        """보스의 위치에서 여러 방향으로 파이어볼 발사"""
+        num_fireballs = 8  # 파이어볼 개수
+        angle_step = 2 * math.pi / num_fireballs  # 360도 나누기 파이어볼 개수
+        speed = 20  # 파이어볼 속도
 
-    def split_fire_ball(self): #왼쪽 위에서 파이어볼을 5갈래로 흩부림
+        for i in range(num_fireballs):
+            angle = i * angle_step  # 각 파이어볼의 발사 각도 계산
+            velocity_x = math.cos(angle) * speed
+            velocity_y = math.sin(angle) * speed
 
-        pass
+            # 파이어볼 생성
+            fireball_obj = fireball(self.x, self.y, velocity_x, velocity_y)
+
+            # game_world에 추가
+            game_world.add_object(fireball_obj, 1)
+            game_world.add_collision_pair('player:attack', None, fireball_obj)
+        return BehaviorTree.SUCCESS
+
+
     def fireball_rain(self): #하늘에서 불비가 내려옴
+
         pass
     def split_in_center(self): #화면중앙에서 360도로 파이어볼 발사
         pass
@@ -158,12 +202,23 @@ class boss:
         a4 = Action('오른쪽 아래로 이동', self.move_to_right_down)
         a5 = Action('가운데로 이동', self.move_to_center)
 
+        a6 = Action('파이어볼 발사', self.split_fire_ball)
+        a7 = Action('파이어볼 발사', self.split_fire_ball)
+        a8 = Action('파이어볼 발사', self.split_fire_ball)
+        a9 = Action('파이어볼 발사', self.split_fire_ball)
         # Sequence 노드에 Action 리스트 추가
 
+        #pattern 1 불발사
+        move_and_fire1 = Sequence('왼쪽 위 이동 + 발사', a1, a6)
+        move_and_fire2 = Sequence('오른쪽 위 이동 + 발사', a2, a7)
+        move_and_fire3 = Sequence('왼쪽 아래 이동 + 발사', a3, a8)
+        move_and_fire4 = Sequence('오른쪽 아래 이동 + 발사', a4, a9)
 
-            # Sequence 노드 생성
-        root = Sequence('배회 후 가운데로 이동', a1, a2, a3,a4,a5)
-        # BehaviorTree 초기화
+        #pattern 2 불비
+
+
+        # 이동-발사 패턴을 순서대로 실행
+        root = Sequence('배회 후 발사', move_and_fire1, move_and_fire2, move_and_fire3, move_and_fire4)
 
         # BehaviorTree에 루트 설정
         self.bt = BehaviorTree(root)

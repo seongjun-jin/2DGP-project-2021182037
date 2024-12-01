@@ -101,7 +101,8 @@ class Jump:
 
 class Player:
     def __init__(self):
-        self.x, self.y = 400, 50
+        self.x = clamp(50, self.x, 700)
+        self.y = clamp(50, self.y, 500)
         self.MAX_hp = 5
         self.hp = self.MAX_hp
         self.frame = 0
@@ -214,6 +215,10 @@ class Player:
             self.heal = True
         if group == 'player:portal':
             self.current_portal = other
+        if group == 'player:attack' and not self.is_hit:
+            self.is_hit = True
+            self.hp -= 1
+            self.hit_timer = 1
 
     def enter_portal(self, portal):
         """포탈을 통해 다른 맵으로 이동"""

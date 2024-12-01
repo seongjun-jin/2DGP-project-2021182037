@@ -18,7 +18,7 @@ class fireball:
 
     def __init__(self, x, y, velocity_x, velocity_y):
         if fireball.image is None:
-            fireball.image = load_image('fireball.png')  # 파이어볼 이미지 로드
+            fireball.image = load_image('voidball.png')  # 파이어볼 이미지 로드
         self.x = x
         self.y = y
         self.velocity_x = velocity_x  # X 방향 속도
@@ -26,7 +26,7 @@ class fireball:
         self.frame = 0
 
     def draw(self):
-        self.image.clip_draw(int(self.frame) * 33, 33 * 10, 33, 33, self.x, self.y, 200, 200)
+        self.image.clip_draw(0, 0, 73, 59, self.x, self.y, 100, 100)
         draw_rectangle(*self.get_bb())
 
     def update(self):

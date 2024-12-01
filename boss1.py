@@ -10,6 +10,7 @@ from behavior_tree import BehaviorTree, Action, Sequence, Condition, Selector
 import time
 import math
 from fireball import fireball
+from beam import Beam
 #
 PIXEL_PER_METER = (10.0 / 0.3)  # 10 pixel 30 cm
 RUN_SPEED_KMPH = 20.0  # Km / Hour
@@ -30,8 +31,8 @@ class boss:
         self.x, self.y = 400,200
         self.frame = 0
         self.image = load_image("1.png")
-        self.hp = 5
-        self.Max_hp = 5
+        self.Max_hp = 100
+        self.hp = self.Max_hp
         self.font = load_font('ENCR10B.TTF', 16)
         self.is_hit = False
         self.is_hit_timer = 0
@@ -149,15 +150,24 @@ class boss:
         return BehaviorTree.RUNNING
 
     def move_to_center(self):
+        # 목표 좌표 설정
         self.tx, self.ty = 400, 300
-        self.move_slightly_to(self.tx, self.ty)
-        if self.distance_less_than(self.tx, self.ty, self.x, self.y, 7):
-            if not hasattr(self, 'wait_start'):
-                self.wait_start = time.time()  # 대기 시작 시간 기록
-            elif time.time() - self.wait_start >= 0.5:  # 1초 대기
-                del self.wait_start  # 대기 완료 후 초기화
-                return BehaviorTree.SUCCESS
+
+        # 현재 위치와 목표 위치 간 거리 계산
+        if not self.distance_less_than(self.tx, self.ty, self.x, self.y, 1):  # 거리가 7 이상일 때만 이동
+            self.move_slightly_to(self.tx, self.ty)
             return BehaviorTree.RUNNING
+
+        # 목표 위치에 도달한 경우 멈춤
+        if not hasattr(self, 'wait_start'):  # 대기 시작 시간 기록
+            self.wait_start = time.time()
+            return BehaviorTree.RUNNING
+
+        # 대기 시간이 0.5초 경과하면 성공 처리
+        elif time.time() - self.wait_start >= 0.5:
+            del self.wait_start  # 대기 완료 후 초기화
+            return BehaviorTree.SUCCESS
+
         return BehaviorTree.RUNNING
 
     def split_fire_ball(self):
@@ -183,13 +193,43 @@ class boss:
     def fireball_rain(self): #하늘에서 불비가 내려옴
 
         pass
-    def split_in_center(self): #화면중앙에서 360도로 파이어볼 발사
-        pass
-    def move_and_fire(self): #왼쪽위-> 오른쪽위-> 오른쪽아래->왼쪽 아래로 이동해 추적하는 파이어볼 1기씩 생성
-        pass
+
+    def split_in_center(self):
+        """12시 방향부터 30도씩 돌아가며 순서대로 발사"""
+        if not hasattr(self, 'fireball_angle'):
+            self.fireball_angle = 0  # 시작 각도 0도 (12시 방향)
+            self.last_fire_time = time.time()  # 마지막 발사 시간 초기화
+
+        # 12발을 30도 간격으로 발사
+        if self.fireball_angle < 720:
+            current_time = time.time()
+            if current_time - self.last_fire_time >= 0.05:  # 발사 간격 (0.2초)
+                # 각도를 라디안으로 변환
+                angle_radians = math.radians(self.fireball_angle)
+                velocity_x = math.cos(angle_radians) * 20
+                velocity_y = math.sin(angle_radians) * 20
+
+                # 파이어볼 생성
+                fireball_obj = fireball(self.x, self.y, velocity_x, velocity_y)
+                game_world.add_object(fireball_obj, 1)
+                game_world.add_collision_pair('player:attack', None, fireball_obj)
+
+                # 다음 각도로 이동
+                self.fireball_angle += 20
+                self.last_fire_time = current_time
+            return BehaviorTree.RUNNING
+        else:
+            # 모든 발사 완료 후 초기화 및 성공 반환
+            del self.fireball_angle
+            del self.last_fire_time
+            return BehaviorTree.SUCCESS
+
     def fire_wave(self): #거대한 파이어볼을 떨어뜨려 불의 파도를 만듦
         pass
-    def final_flash(self): #거대한 빔 발사
+    def final_flash(self): #빔 발사
+        beam = Beam(self.x, self.y)
+        game_world.add_object(beam, 1)
+        game_world.add_collision_pair('player:attack', None, beam)
         pass
     def break_time(self): #쉼
         pass
@@ -207,6 +247,8 @@ class boss:
         a8 = Action('파이어볼 발사', self.split_fire_ball)
         a9 = Action('파이어볼 발사', self.split_fire_ball)
         # Sequence 노드에 Action 리스트 추가
+        a10 = Action('빔', self.final_flash)
+        a11 = Action('시계방향 발사',self.split_in_center)
 
         #pattern 1 불발사
         move_and_fire1 = Sequence('왼쪽 위 이동 + 발사', a1, a6)
@@ -216,9 +258,14 @@ class boss:
 
         #pattern 2 불비
 
+        #pattern 3
+        fire_on_center = Sequence('가운데 이동 + 시계방향 발사', a5, a11)
+        #pattern 5
+        move_and_flash = Sequence('가운데 이동 + 발사', a5, a10)
 
         # 이동-발사 패턴을 순서대로 실행
-        root = Sequence('배회 후 발사', move_and_fire1, move_and_fire2, move_and_fire3, move_and_fire4)
-
+        root = Sequence('배회 후 발사', move_and_fire1, move_and_fire2, move_and_fire3, move_and_fire4, move_and_flash)
+        root = Sequence('빔 발사',move_and_flash)
+        root = Sequence('가운데 이동 후 발사',fire_on_center)
         # BehaviorTree에 루트 설정
         self.bt = BehaviorTree(root)

@@ -101,8 +101,8 @@ class Jump:
 
 class Player:
     def __init__(self):
-        self.x = clamp(50, self.x, 700)
-        self.y = clamp(50, self.y, 500)
+        self.x = 400
+        self.y = 50
         self.MAX_hp = 5
         self.hp = self.MAX_hp
         self.frame = 0
@@ -159,6 +159,8 @@ class Player:
 
         if self.hp <= 0 and not self.is_dead:
             self.die()
+        self.x = clamp(25, self.x, 775)
+        self.y = clamp(50, self.y, 500)
 
     def draw(self):
         if self.is_dead:

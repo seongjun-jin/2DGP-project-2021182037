@@ -258,14 +258,16 @@ class boss:
 
         #pattern 2 불비
 
+
         #pattern 3
         fire_on_center = Sequence('가운데 이동 + 시계방향 발사', a5, a11)
+
         #pattern 5
         move_and_flash = Sequence('가운데 이동 + 발사', a5, a10)
 
         # 이동-발사 패턴을 순서대로 실행
-        root = Sequence('배회 후 발사', move_and_fire1, move_and_fire2, move_and_fire3, move_and_fire4, move_and_flash)
-        root = Sequence('빔 발사',move_and_flash)
+        #root = Sequence('배회 후 발사', move_and_fire1, move_and_fire2, move_and_fire3, move_and_fire4, move_and_flash)
+        #root = Sequence('빔 발사',move_and_flash)
         root = Sequence('가운데 이동 후 발사',fire_on_center)
         # BehaviorTree에 루트 설정
         self.bt = BehaviorTree(root)

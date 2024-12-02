@@ -12,11 +12,11 @@ TIME_PER_ACTION = 0.5
 ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
 FRAMES_PER_ACTION = 8
 
-class Sword:
+class Heart:
     def __init__(self):
-        self.x = 300
+        self.x = 500
         self.y = 70
-        self.image = load_image('sword.png')
+        self.image = load_image('heart.png')
         self.frame = 0
         self.motion = 0  # 움직임 제어를 위한 변수
         self.direction = 1  # 위(1) 또는 아래(-1)로 움직이는 방향
@@ -28,10 +28,10 @@ class Sword:
     def draw(self):
         if self.image:
             if self.is_guide:
-                self.image.clip_draw(0, 0, 500, 500, self.x, self.y, 40, 40)
+                self.image.clip_draw(0, 0, 254, 254, self.x, self.y, 30, 30)
                 self.font.draw(self.x - 10, self.y + 50, f'PRESS DOWN key', (255, 255, 0))
             else:
-                self.image.clip_draw(0, 0, 500, 500, self.x, self.y, 40, 40)
+                self.image.clip_draw(0, 0, 254, 254, self.x, self.y, 30, 30)
         draw_rectangle(*self.get_bb())
 
     def update(self):

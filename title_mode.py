@@ -5,7 +5,7 @@ import game_framework
 
 def init():
     global image
-    image = load_image('title.png')
+    image = load_image('title3.png')
 
 def finish():
     global image

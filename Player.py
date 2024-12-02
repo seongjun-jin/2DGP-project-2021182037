@@ -3,6 +3,7 @@ from State_Machine import *
 import game_world
 from Attack import Slash
 import game_framework
+import server
 import bossroom1_mode
 #직접적인 공간수치가 아닌 프레임숫자, 시간으로 표현을 해라
 
@@ -217,6 +218,8 @@ class Player:
             self.heal = True
         if group == 'player:portal':
             self.current_portal = other
+        if group == 'player:item':
+            pass
         if group == 'player:attack' and not self.is_hit:
             self.is_hit = True
             self.hp -= 1
@@ -231,8 +234,10 @@ class Player:
             self.y = portal.target_y
             portal.target_map.player = self
             game_framework.change_mode(portal.target_map)
+            server.players_map = portal.target_map
 
-
+    def Acquire_Item:
+        
 
 
 

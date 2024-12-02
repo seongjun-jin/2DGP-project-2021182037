@@ -1,4 +1,6 @@
 from pico2d import load_image, draw_rectangle, load_font
+import server
+from Portal import portal
 import game_framework
 from Boss1 import boss
 
@@ -15,17 +17,16 @@ FRAMES_PER_ACTION = 8
 class hp_bar:
     def __init__(self):
         self.x, self.y = 600, 60
-        self.image = load_image("bonfire.png")
-        self.frame = 0
-        self.hp_ratio = 0
+        self.image = load_image("hp_bar.png")
+        self.hp_ratio = 1.0  # Start with full HP
+        self.hp_width = 364 / 4
 
     def update(self):
-        self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 8
-        self.hp_ratio = boss.hp / boss.Max_hp
+        if hasattr(server, 'boss') and hasattr(server.boss, 'hp') and hasattr(server.boss, 'Max_hp'):
+            self.hp_ratio = server.boss.hp / server.boss.Max_hp
+        else:
+            self.hp_ratio = 1.0  # Default full HP if boss is not defined
 
     def draw(self):
-        if self.image:
-                if boss:
-                    self.image.clip_draw(int(self.frame) * 58, 120, 58, 65, self.x, self.y, 50, 50)
-                else:
-                    self.image.clip_draw(int(self.frame) * 58, 120, 58, 65, self.x, self.y, 50, 50)
+        if self.image and server.players_map == 'bossroom1':  # Adjust as needed
+            self.image.clip_draw(0, self.hp_width * 4, 678, self.hp_width, 200, 700, 100, 100)

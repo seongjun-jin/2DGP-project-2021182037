@@ -12,7 +12,8 @@ from Portal import portal
 from Boss1 import boss
 import title_mode
 import server
-
+from sword import Sword
+from heart import Heart
 
 
 def update():
@@ -45,7 +46,8 @@ def init():
     global player
     global portal
     global bonfire
-
+    global sword
+    global heart
 
     server.player = Player()
     game_world.add_object(server.player, 2)
@@ -61,6 +63,16 @@ def init():
 
     background = BG()
     game_world.add_object(background, 0)
+
+    sword = Sword()
+    game_world.add_object(sword, 1)
+
+    heart = Heart()
+    game_world.add_object(heart, 1)
+
+    game_world.add_collision_pair('player:item', server.player, None)
+    game_world.add_collision_pair('player:item', None, sword)
+    game_world.add_collision_pair('player:item', None, heart)
 
     game_world.add_collision_pair('player:attack', server.player, None)
 

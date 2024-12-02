@@ -236,8 +236,9 @@ class Player:
             game_framework.change_mode(portal.target_map)
             server.players_map = portal.target_map
 
-    def Acquire_Item:
-        
+    def Acquire_Item(self):
+        pass
+
 
 
 

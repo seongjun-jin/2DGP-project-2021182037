@@ -16,7 +16,7 @@ class Sword:
     def __init__(self):
         self.x = 300
         self.y = 70
-        self.image = load_image('sword.png')
+        self.image = load_image('warning_sign_attack.png')
         self.frame = 0
         self.motion = 0  # 움직임 제어를 위한 변수
         self.direction = 1  # 위(1) 또는 아래(-1)로 움직이는 방향
@@ -28,10 +28,10 @@ class Sword:
     def draw(self):
         if self.image:
             if self.is_guide:
-                self.image.clip_draw(0, 0, 500, 500, self.x, self.y, 40, 40)
+                self.image.clip_draw(0, 0, 634, 393, self.x, self.y, 50, 50)
                 self.font.draw(self.x - 10, self.y + 50, f'PRESS DOWN key', (255, 255, 0))
             else:
-                self.image.clip_draw(0, 0, 500, 500, self.x, self.y, 40, 40)
+                self.image.clip_draw(0, 0, 634, 393, self.x, self.y, 50, 50)
         draw_rectangle(*self.get_bb())
 
     def update(self):

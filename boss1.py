@@ -170,6 +170,21 @@ class boss:
 
         return BehaviorTree.RUNNING
 
+    def move_to_upper_center(self):
+        self.tx, self.ty = 400, 600
+
+        if not self.distance_less_than(self.tx, self.ty, self.x, self.y, 7):
+            self.move_slightly_to(self.tx, self.ty)
+            return BehaviorTree.RUNNING
+
+        if not hasattr(self, 'wait_start'):
+            self.wait_start = time.time()
+        elif time.time() - self.wait_start >= 0.5:
+            del self.wait_start
+            return BehaviorTree.SUCCESS
+
+        return BehaviorTree.RUNNING
+
     def split_fire_ball(self):
         """보스의 위치에서 여러 방향으로 파이어볼 발사"""
         num_fireballs = 8  # 파이어볼 개수
@@ -191,7 +206,20 @@ class boss:
 
 
     def fireball_rain(self): #하늘에서 불비가 내려옴
+        num_failed_fireballs = 10
+        fire_step = 100
+        speed = -10
 
+
+        for i in range(num_failed_fireballs):
+            velocity_y = speed
+
+            fireball_obj = fireball(fire_step * i, 800, 0, velocity_y)
+
+            game_world.add_object(fireball_obj, 1)
+            game_world.add_collision_pair('player:attack', None, fireball_obj)
+
+        return BehaviorTree.SUCCESS
         pass
 
     def split_in_center(self):
@@ -226,12 +254,14 @@ class boss:
 
     def fire_wave(self): #거대한 파이어볼을 떨어뜨려 불의 파도를 만듦
         pass
+
     def final_flash(self): #빔 발사
         beam = Beam(self.x, self.y)
         game_world.add_object(beam, 1)
         game_world.add_collision_pair('player:attack', None, beam)
         pass
     def break_time(self): #쉼
+
         pass
 
     def build_behavior_tree(self):
@@ -241,33 +271,36 @@ class boss:
         a3 = Action('왼쪽 아래로 이동', self.move_to_left_down)
         a4 = Action('오른쪽 아래로 이동', self.move_to_right_down)
         a5 = Action('가운데로 이동', self.move_to_center)
-
-        a6 = Action('파이어볼 발사', self.split_fire_ball)
+        a6 = Action('가운데 위로 이동', self.move_to_upper_center)
         a7 = Action('파이어볼 발사', self.split_fire_ball)
         a8 = Action('파이어볼 발사', self.split_fire_ball)
         a9 = Action('파이어볼 발사', self.split_fire_ball)
+        a10 = Action('파이어볼 발사', self.split_fire_ball)
         # Sequence 노드에 Action 리스트 추가
-        a10 = Action('빔', self.final_flash)
-        a11 = Action('시계방향 발사',self.split_in_center)
-
+        a11 = Action('빔', self.final_flash)
+        a12 = Action('시계방향 발사',self.split_in_center)
+        a13 = Action('불비', self.fireball_rain)
         #pattern 1 불발사
-        move_and_fire1 = Sequence('왼쪽 위 이동 + 발사', a1, a6)
-        move_and_fire2 = Sequence('오른쪽 위 이동 + 발사', a2, a7)
-        move_and_fire3 = Sequence('왼쪽 아래 이동 + 발사', a3, a8)
-        move_and_fire4 = Sequence('오른쪽 아래 이동 + 발사', a4, a9)
+        move_and_fire1 = Sequence('왼쪽 위 이동 + 발사', a1, a7)
+        move_and_fire2 = Sequence('오른쪽 위 이동 + 발사', a2, a8)
+        move_and_fire3 = Sequence('왼쪽 아래 이동 + 발사', a3, a9)
+        move_and_fire4 = Sequence('오른쪽 아래 이동 + 발사', a4, a10)
 
         #pattern 2 불비
-
+        fire_rain = Sequence('가운데 위 이동 후 아래로 발사', a6, a13)
 
         #pattern 3
-        fire_on_center = Sequence('가운데 이동 + 시계방향 발사', a5, a11)
+        fire_on_center = Sequence('가운데 이동 + 시계방향 발사', a5, a12)
+
+        #pattern 4
 
         #pattern 5
-        move_and_flash = Sequence('가운데 이동 + 발사', a5, a10)
+        move_and_flash = Sequence('가운데 이동 + 발사', a5, a11)
 
         # 이동-발사 패턴을 순서대로 실행
         #root = Sequence('배회 후 발사', move_and_fire1, move_and_fire2, move_and_fire3, move_and_fire4, move_and_flash)
         #root = Sequence('빔 발사',move_and_flash)
-        root = Sequence('가운데 이동 후 발사',fire_on_center)
+        #root = Sequence('가운데 이동 후 발사',fire_on_center)
+        root = Sequence('가운데 위 이동 후 아래로 발사', fire_rain)
         # BehaviorTree에 루트 설정
         self.bt = BehaviorTree(root)

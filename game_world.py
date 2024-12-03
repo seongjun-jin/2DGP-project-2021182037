@@ -15,6 +15,14 @@ def clear():
     for layer in world:
         layer.clear()
 
+def clear_collisions():
+    """맵 전체의 충돌 페어를 초기화합니다."""
+    collision_pairs.clear()
+
+def clear_all():
+    clear()
+    clear_collisions()
+
 def add_object(o, depth):
     world[depth].append(o)
 
@@ -39,10 +47,11 @@ def remove_object(o):
     for layer in world:
         if o in layer:
             layer.remove(o)
-            remove_collision_object(o)
-            del o #메모리에서 객체 자체를 삭제
+            remove_collision_object(o)  # 충돌 페어에서 제거
+            del o  # 메모리에서 객체 삭제
             return
     raise ValueError('Cannot delete non existing object')
+
 
 
 def collide(a, b):

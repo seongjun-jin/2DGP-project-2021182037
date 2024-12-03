@@ -13,7 +13,7 @@ def change_mode(mode):
         stack[-1].finish()
         # remove the current mode
         stack.pop()
-    #game_world.clear_collisions()
+    game_world.clear_all()
     stack.append(mode)
     mode.init()
 

@@ -27,12 +27,16 @@ class Sword:
         self.is_guide = False
         self.effected_one = None
         self.font = load_font('ENCR10B.TTF', 16)
+        self.item_font = load_font('강원교육튼튼.ttf', 32)
+        self.guide_font = load_font('강원교육튼튼.ttf', 15)
+        self.removed = False
 
     def draw(self):
         if self.image and not server.player.item_select:
             if self.is_guide and not server.player.item_select:
                 self.image.clip_draw(0, 0, 634, 393, self.x, self.y, 50, 50)
-                self.font.draw(self.x - 10, self.y + 50, f'PRESS DOWN key', (255, 255, 0))
+                self.item_font.draw(0, 500, f'플레이어의 공격력을 1 늘립니다', (0,0,0))
+                self.guide_font.draw(self.x - 100, self.y + 50, f'아래 방향키로 획득(아이템 2개 중 하나만 선택 가능합니다)', (0, 0, 0))
             else:
                 self.image.clip_draw(0, 0, 634, 393, self.x, self.y, 50, 50)
         draw_rectangle(*self.get_bb())
@@ -45,8 +49,9 @@ class Sword:
         self.motion += self.speed
         self.y += math.sin(self.motion * 0.1) * self.amplitude * game_framework.frame_time
         self.effected_one = None
-        if server.player.item_select:
+        if server.player.item_select and not self.removed:
             game_world.remove_object(self)
+            self.removed = True
 
     def get_bb(self):
         #하나의 튜플을 리턴
@@ -60,8 +65,10 @@ class Sword:
 
     def apply_effect(self, player):
         if not server.player.item_select:
-            player.attack_force += 1
-            player.hp = min(player.MAX_hp, player.hp + 1)  # 체력을 최대값으로 회복
-            print(f"Sword effect applied! attack_force increased to {player.attack_force}")
-            game_world.remove_object(self)
-            server.player.item_select = True
+            if not self.removed:
+                player.attack_force += 1
+                player.hp = min(player.MAX_hp, player.hp + 1)  # 체력을 최대값으로 회복
+                print(f"Sword effect applied! attack_force increased to {player.attack_force}")
+                game_world.remove_object(self)
+                self.removed = True
+                server.player.item_select = True

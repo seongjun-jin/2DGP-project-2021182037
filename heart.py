@@ -1,6 +1,8 @@
 from pico2d import load_image, load_font, draw_rectangle
 import game_framework
 import math
+import server
+import game_world
 
 PIXEL_PER_METER = (10.0 / 0.3)  # 10 pixel 30 cm
 RUN_SPEED_KMPH = 20.0  # Km / Hour
@@ -23,10 +25,11 @@ class Heart:
         self.amplitude = 10  # 움직임의 범위 (픽셀)
         self.speed = 2  # 움직임 속도
         self.is_guide = False
+        self.effected_one = None
         self.font = load_font('ENCR10B.TTF', 16)
 
     def draw(self):
-        if self.image:
+        if self.image and not server.player.item_select:
             if self.is_guide:
                 self.image.clip_draw(0, 0, 192, 187, self.x, self.y, 50, 50)
                 self.font.draw(self.x - 10, self.y + 50, f'PRESS DOWN key', (255, 255, 0))
@@ -41,6 +44,9 @@ class Heart:
         # y 좌표를 위아래로 움직임
         self.motion += self.speed
         self.y += math.sin(self.motion * 0.1) * self.amplitude * game_framework.frame_time
+        self.effected_one = None
+        if server.player.item_select:
+            game_world.remove_object(self)
 
     def get_bb(self):
         #하나의 튜플을 리턴
@@ -51,4 +57,15 @@ class Heart:
     def handle_collision(self, group, other):
         if group == 'player:item':
             self.is_guide = True
+            self.effected_one = other
+
+    def apply_effect(self, player):
+        if not server.player.item_select:
+            player.MAX_hp += 1
+            player.hp = min(player.MAX_hp, player.hp + 1)  # 체력을 최대값으로 회복
+            print(f"Heart effect applied! MAX HP increased to {player.MAX_hp}")
+            game_world.remove_object(self)
+            server.player.item_select = True
+
+
 

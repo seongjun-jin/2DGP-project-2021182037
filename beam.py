@@ -25,7 +25,7 @@ class Beam:
         self.frame_width = 250 / 6
 
     def draw(self):
-        frame_width = 250 / 6  # 각 프레임의 가로 너비
+        frame_width = 219 / 6  # 각 프레임의 가로 너비
         frame_x = int(self.frame) * int(frame_width)  # 현재 프레임의 시작 x 좌표
         self.image.clip_draw(frame_x, 0, int(frame_width), 439, self.x, self.y, 200, 1000)
         draw_rectangle(*self.get_bb())

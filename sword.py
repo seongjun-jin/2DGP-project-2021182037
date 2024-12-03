@@ -1,6 +1,8 @@
 from pico2d import load_image, load_font, draw_rectangle
 import game_framework
 import math
+import server
+import game_world
 
 PIXEL_PER_METER = (10.0 / 0.3)  # 10 pixel 30 cm
 RUN_SPEED_KMPH = 20.0  # Km / Hour
@@ -23,11 +25,12 @@ class Sword:
         self.amplitude = 10  # 움직임의 범위 (픽셀)
         self.speed = 2  # 움직임 속도
         self.is_guide = False
+        self.effected_one = None
         self.font = load_font('ENCR10B.TTF', 16)
 
     def draw(self):
-        if self.image:
-            if self.is_guide:
+        if self.image and not server.player.item_select:
+            if self.is_guide and not server.player.item_select:
                 self.image.clip_draw(0, 0, 634, 393, self.x, self.y, 50, 50)
                 self.font.draw(self.x - 10, self.y + 50, f'PRESS DOWN key', (255, 255, 0))
             else:
@@ -41,6 +44,9 @@ class Sword:
         # y 좌표를 위아래로 움직임
         self.motion += self.speed
         self.y += math.sin(self.motion * 0.1) * self.amplitude * game_framework.frame_time
+        self.effected_one = None
+        if server.player.item_select:
+            game_world.remove_object(self)
 
     def get_bb(self):
         #하나의 튜플을 리턴
@@ -52,3 +58,10 @@ class Sword:
         if group == 'player:item':
             self.is_guide = True
 
+    def apply_effect(self, player):
+        if not server.player.item_select:
+            player.attack_force += 1
+            player.hp = min(player.MAX_hp, player.hp + 1)  # 체력을 최대값으로 회복
+            print(f"Sword effect applied! attack_force increased to {player.attack_force}")
+            game_world.remove_object(self)
+            server.player.item_select = True

@@ -123,6 +123,8 @@ class Player:
         self.is_dead = False
         self.is_falling = False
         self.current_portal = None
+        self.item_select = False
+        self.current_item = None
         self.enter_bossroom = False
         self.state_machine = StateMachine(self)
         self.state_machine.start(Idle)
@@ -134,9 +136,13 @@ class Player:
     def handle_event(self, event):
         if not self.is_dead:
             self.state_machine.add_event(['INPUT', event])
+
         if self.current_portal and event.type == SDL_KEYDOWN and event.key == SDLK_DOWN:
             self.enter_portal(self.current_portal)
 
+        if event.type == SDL_KEYDOWN and event.key == SDLK_DOWN:
+            if self.current_item:  # 현재 충돌 중인 아이템이 있을 때
+                self.current_item.apply_effect(self)  # 아이템 획득
 
     def update(self):
         if self.is_dead:
@@ -219,6 +225,7 @@ class Player:
         if group == 'player:portal':
             self.current_portal = other
         if group == 'player:item':
+            self.current_item = other
             pass
         if group == 'player:attack' and not self.is_hit:
             self.is_hit = True
@@ -236,8 +243,10 @@ class Player:
             game_framework.change_mode(portal.target_map)
             server.players_map = portal.target_map
 
-    def Acquire_Item(self):
-        pass
+    def Acquire_Item(self, item):
+        print(f"Player acquired item: {type(item).__name__}")
+        item.apply_effect(self)  # 아이템 효과를 플레이어에 적용
+        game_world.remove_object(item)  # 게임 월드에서 아이템 제거
 
 
 

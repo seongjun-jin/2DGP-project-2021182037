@@ -173,7 +173,7 @@ class boss:
     def move_to_upper_center(self):
         self.tx, self.ty = 400, 600
 
-        if not self.distance_less_than(self.tx, self.ty, self.x, self.y, 7):
+        if not self.distance_less_than(self.tx, self.ty, self.x, self.y, 4):
             self.move_slightly_to(self.tx, self.ty)
             return BehaviorTree.RUNNING
 
@@ -259,6 +259,7 @@ class boss:
         beam = Beam(self.x, self.y)
         game_world.add_object(beam, 1)
         game_world.add_collision_pair('player:attack', None, beam)
+        return BehaviorTree.SUCCESS
         pass
     def break_time(self): #쉼
 
@@ -278,29 +279,35 @@ class boss:
         a10 = Action('파이어볼 발사', self.split_fire_ball)
         # Sequence 노드에 Action 리스트 추가
         a11 = Action('빔', self.final_flash)
-        a12 = Action('시계방향 발사',self.split_in_center)
-        a13 = Action('불비', self.fireball_rain)
+        a12 = Action('빔', self.final_flash)
+        a13 = Action('빔', self.final_flash)
+
+        a14 = Action('시계방향 발사',self.split_in_center)
+        a15 = Action('불비', self.fireball_rain)
         #pattern 1 불발사
         move_and_fire1 = Sequence('왼쪽 위 이동 + 발사', a1, a7)
         move_and_fire2 = Sequence('오른쪽 위 이동 + 발사', a2, a8)
         move_and_fire3 = Sequence('왼쪽 아래 이동 + 발사', a3, a9)
         move_and_fire4 = Sequence('오른쪽 아래 이동 + 발사', a4, a10)
 
+        pattern1  = Sequence('배회 후 발사', move_and_fire1, move_and_fire2, move_and_fire3, move_and_fire4)
+
         #pattern 2 불비
-        fire_rain = Sequence('가운데 위 이동 후 아래로 발사', a6, a13)
+        pattern2 = fire_rain = Sequence('가운데 위 이동 후 아래로 발사', a6, a15)
 
         #pattern 3
-        fire_on_center = Sequence('가운데 이동 + 시계방향 발사', a5, a12)
+        pattern3 = fire_on_center = Sequence('가운데 이동 + 시계방향 발사', a5, a14)
 
         #pattern 4
 
         #pattern 5
-        move_and_flash = Sequence('가운데 이동 + 발사', a5, a11)
+        pattern5 = move_and_flash = Sequence('가운데 이동 + 발사', a1, a11, a2, a12, a6, a13)
 
         # 이동-발사 패턴을 순서대로 실행
         #root = Sequence('배회 후 발사', move_and_fire1, move_and_fire2, move_and_fire3, move_and_fire4, move_and_flash)
-        #root = Sequence('빔 발사',move_and_flash)
+        root = Sequence('빔 발사',move_and_flash)
         #root = Sequence('가운데 이동 후 발사',fire_on_center)
-        root = Sequence('가운데 위 이동 후 아래로 발사', fire_rain)
+        #root = Sequence('가운데 위 이동 후 아래로 발사', fire_rain)
+        #root = Sequence('모든 패턴 구사', pattern1, pattern2, pattern3, pattern5)
         # BehaviorTree에 루트 설정
         self.bt = BehaviorTree(root)

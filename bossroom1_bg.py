@@ -7,6 +7,7 @@ class B1_BG:
             print("Image failed to load")
 
     def update(self):
+
         pass
 
     def draw(self):

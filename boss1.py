@@ -11,6 +11,7 @@ import time
 import math
 from fireball import fireball
 from beam import Beam
+from dark_hand import hand
 #
 PIXEL_PER_METER = (10.0 / 0.3)  # 10 pixel 30 cm
 RUN_SPEED_KMPH = 20.0  # Km / Hour
@@ -279,13 +280,24 @@ class boss:
             del self.last_fire_time
             return BehaviorTree.SUCCESS
 
-    def fire_wave(self): #거대한 파이어볼을 떨어뜨려 불의 파도를 만듦
-        velocity_y = -10
-        fireball_obj = fireball(self.x, self.y, 0, velocity_y)
-        game_world.add_object(fireball_obj, 1)
-        game_world.add_collision_pair('player:attack', None, fireball_obj)
+    def fire_wave(self):
+        num_hands = 10  # 한 번에 생성되는 손의 수
+        hand_spacing = 50  # 손 간의 간격
+        start_x = self.x - (num_hands // 2) * hand_spacing  # 손 시작 위치
+        y_position = 50  # 손이 처음 나타나는 y 좌표
+        warning_timer = 1
 
-        pass
+        if not hasattr(self, 'wait_start'):
+            self.wait_start = time.time()
+        elif time.time() - self.wait_start >= warning_timer:
+            del self.wait_start
+        for i in range(num_hands):
+            x_position = start_x + i * hand_spacing  # 손 위치 계산
+            hand_obj = hand(x_position, y_position, 0, 0)
+            game_world.add_object(hand_obj, 1)
+            game_world.add_collision_pair('player:attack', None, hand_obj)
+
+        return BehaviorTree.SUCCESS
 
     def final_flash(self): #빔 발사
         beam = Beam(self.x, self.y)
@@ -293,9 +305,24 @@ class boss:
         game_world.add_collision_pair('player:attack', None, beam)
         return BehaviorTree.SUCCESS
         pass
-    def break_time(self): #쉼
 
+    def warning_sign(self):
         pass
+
+    def break_time(self): #쉼
+        self.tx, self.ty = self.x, 50
+
+        if not self.distance_less_than(self.tx, self.ty, self.x, self.y, 4):
+            self.move_slightly_to(self.tx, self.ty)
+            return BehaviorTree.RUNNING
+
+        if not hasattr(self, 'wait_start'):
+            self.wait_start = time.time()
+        elif time.time() - self.wait_start >= 3:
+            del self.wait_start
+            return BehaviorTree.SUCCESS
+
+        return BehaviorTree.RUNNING
 
     def build_behavior_tree(self):
         # 각 행동을 Action 노드로 래핑
@@ -316,6 +343,11 @@ class boss:
 
         a14 = Action('시계방향 발사',self.split_in_center)
         a15 = Action('불비', self.fireball_rain)
+
+        a16 = Action('손 소환',self.fire_wave)
+
+        a17 = Action('쉼', self.break_time)
+
         #pattern 1 불발사
         move_and_fire1 = Sequence('왼쪽 위 이동 + 발사', a1, a7)
         move_and_fire2 = Sequence('오른쪽 위 이동 + 발사', a2, a8)
@@ -331,15 +363,20 @@ class boss:
         pattern3 = fire_on_center = Sequence('가운데 이동 + 시계방향 발사', a5, a14)
 
         #pattern 4
+        pattern4 = hand_raise = Sequence('손이 올라오다', a5, a16)
 
         #pattern 5
         pattern5 = move_and_flash = Sequence('가운데 이동 + 발사', a1, a11, a2, a12, a6, a13)
+
+        #break
+        break_time = Sequence('쉼', a17)
 
         # 이동-발사 패턴을 순서대로 실행
         #root = Sequence('배회 후 발사', move_and_fire1, move_and_fire2, move_and_fire3, move_and_fire4, move_and_flash)
         #root = Sequence('빔 발사',move_and_flash)
         #root = Sequence('가운데 이동 후 발사',fire_on_center)
         #root = Sequence('가운데 위 이동 후 아래로 발사', fire_rain)
-        root = Sequence('모든 패턴 구사', pattern1, pattern2, pattern3, move_and_flash)
+        #root = Sequence('가운데 위 이동 후 아래로 발사', hand_raise)
+        root = Sequence('모든 패턴 구사', pattern1, pattern2, pattern3, pattern4, pattern5, break_time)
         # BehaviorTree에 루트 설정
         self.bt = BehaviorTree(root)

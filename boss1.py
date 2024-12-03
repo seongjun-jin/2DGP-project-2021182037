@@ -69,7 +69,7 @@ class boss:
             draw_rectangle(*self.get_bb())
             self.font.draw(self.x - 10, self.y + 50, f'{self.hp:02d}', (255, 255, 0))
         else:
-            self.is_beaten = True
+            #self.is_beaten = True
             game_world.remove_object(self)
             pass
 
@@ -87,14 +87,33 @@ class boss:
             self.hp -= 1
             self.is_hit = True
             self.is_hit_timer = 0.5
-    def move_slightly_to(self, tx, ty):
-        self.dir = math.atan2(ty - self.y, tx - self.x)
-        distance = RUN_SPEED_PPS * game_framework.frame_time * 10
-        self.x += distance * math.cos(self.dir)
-        self.y += distance * math.sin(self.dir)
 
-        self.x = clamp(50, self.x, 700)
-        self.y = clamp(50, self.y, 500)
+    def move_slightly_to(self, tx, ty):
+        distance_to_target = math.sqrt((tx - self.x) ** 2 + (ty - self.y) ** 2)
+
+        # 속도 계산: 목표와의 거리에 따라 속도 조정 (멀리 있을수록 빠르게)
+        # 최대 속도와 최소 속도 설정
+        max_speed = RUN_SPEED_PPS * 10  # 최대 속도 (2배 빠르게)
+        min_speed = RUN_SPEED_PPS * 0.2  # 최소 속도 (30% 속도)
+
+        # 속도는 목표와의 거리가 멀수록 빠르고, 가까울수록 느려짐
+        if distance_to_target > 200:
+            speed = max_speed  # 멀리 있을 때 최대 속도
+        elif distance_to_target > 50:
+            speed = max_speed * ((distance_to_target / 200) ** 3) # 거리에 따라 속도 비례 감소
+        else:
+            speed = min_speed  # 매우 가까울 때 최소 속도
+
+        # 이동 방향 계산
+        self.dir = math.atan2(ty - self.y, tx - self.x)
+
+        # x, y 이동
+        self.x += speed * math.cos(self.dir) * game_framework.frame_time
+        self.y += speed * math.sin(self.dir) * game_framework.frame_time
+
+        # 화면 경계 제한
+        self.x = clamp(50, self.x, 750)
+        self.y = clamp(50, self.y, 550)
 
     def distance_less_than(self, x1, y1, x2, y2, r):
             distance2 = (x1 - x2) ** 2 + (y1 - y2) ** 2
@@ -204,23 +223,31 @@ class boss:
             game_world.add_collision_pair('player:attack', None, fireball_obj)
         return BehaviorTree.SUCCESS
 
-
-    def fireball_rain(self): #하늘에서 불비가 내려옴
+    def fireball_rain(self):  # 하늘에서 불비가 내려옴
         num_failed_fireballs = 10
         fire_step = 100
         speed = -10
-
+        start_x = 400  # 중앙 위치 (필요에 따라 조정)
 
         for i in range(num_failed_fireballs):
             velocity_y = speed
 
-            fireball_obj = fireball(fire_step * i, 800, 0, velocity_y)
+            # 지그재그 패턴 계산
+            if i % 2 == 0:  # 짝수 인덱스: 왼쪽
+                x_position = start_x - (fire_step * (i // 2))
+            else:  # 홀수 인덱스: 오른쪽
+                x_position = start_x + (fire_step * (i // 2))
 
+            y_position = 800  # 고정된 높이 (필요시 변경 가능)
+
+            # Fireball 객체 생성
+            fireball_obj = fireball(x_position, y_position, 0, velocity_y)
+
+            # 게임 월드에 객체 추가
             game_world.add_object(fireball_obj, 1)
             game_world.add_collision_pair('player:attack', None, fireball_obj)
 
         return BehaviorTree.SUCCESS
-        pass
 
     def split_in_center(self):
         """12시 방향부터 30도씩 돌아가며 순서대로 발사"""
@@ -253,6 +280,11 @@ class boss:
             return BehaviorTree.SUCCESS
 
     def fire_wave(self): #거대한 파이어볼을 떨어뜨려 불의 파도를 만듦
+        velocity_y = -10
+        fireball_obj = fireball(self.x, self.y, 0, velocity_y)
+        game_world.add_object(fireball_obj, 1)
+        game_world.add_collision_pair('player:attack', None, fireball_obj)
+
         pass
 
     def final_flash(self): #빔 발사

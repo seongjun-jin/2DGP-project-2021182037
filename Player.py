@@ -107,12 +107,12 @@ class Player:
         self.MAX_hp = 5
         self.hp = self.MAX_hp
         self.frame = 0
-        self.image = load_image("player.png")
+        self.image = load_image("player(1).png")
         self.dir = 0
         self.attack_force = 1
         self.jump_height = 0
         self.font = load_font('ENCR10B.TTF', 16)
-        self.death_font = load_font('ENCR10B.TTF', 50)
+        self.death_font = load_font('강원교육튼튼.TTF', 50)
         self.face_dir = 1
         self.heal = False
         self.is_hit = False
@@ -172,7 +172,7 @@ class Player:
     def draw(self):
         if self.is_dead:
             self.image.clip_composite_draw(int(self.frame) * 20, 0, 20, 20, math.radians(90), '', self.x, self.y, 20, 20)
-            self.death_font.draw(200, 300, "YOU DIED", (255, 0, 0))
+            self.death_font.draw(300, 300, "YOU DIED", (255, 0, 0))
         else:
             self.state_machine.draw()
             self.font.draw(self.x - 10, self.y + 50, f'{self.hp:02d}', (255, 255, 0))
@@ -246,7 +246,7 @@ class Player:
     def Acquire_Item(self, item):
         print(f"Player acquired item: {type(item).__name__}")
         item.apply_effect(self)  # 아이템 효과를 플레이어에 적용
-        game_world.remove_object(item)  # 게임 월드에서 아이템 제거
+        #game_world.remove_object(item)  # 게임 월드에서 아이템 제거
 
 
 

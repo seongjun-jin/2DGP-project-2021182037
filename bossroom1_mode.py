@@ -72,6 +72,7 @@ def init():
     game_world.add_collision_pair('boss:player', None, boss)
 
     game_world.add_collision_pair('boss:attack', boss, None)
+    game_world.add_collision_pair('player:attack', player, None)
 
 def pause():
     pass

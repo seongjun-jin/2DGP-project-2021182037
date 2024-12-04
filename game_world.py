@@ -1,5 +1,8 @@
+import time
+import random
+
 #배경 - 0 땅 - 1, 캐릭터 - 2
-world = [[], [], []]
+world = [[], [], [], []]
 
 collision_pairs = {} #{key :[[a] [b]]}
 
@@ -10,6 +13,47 @@ def add_collision_pair(group, a, b):
         collision_pairs[group][0].append(a)
     if b:
         collision_pairs[group][1].append(b)
+
+
+
+# 흔들림 오프셋
+screen_shake_intensity = 0  # 흔들림 강도
+screen_shake_duration = 0  # 흔들림 지속 시간
+shake_start_time = 0       # 흔들림 시작 시간
+
+def start_screen_shake(intensity, duration):
+    """화면 흔들림 시작"""
+    global screen_shake_intensity, screen_shake_duration, shake_start_time
+    screen_shake_intensity = intensity
+    screen_shake_duration = duration
+    shake_start_time = time.time()
+
+def apply_screen_shake():
+    """현재 흔들림 오프셋 반환"""
+    global screen_shake_intensity, screen_shake_duration, shake_start_time
+
+    if screen_shake_duration > 0:
+        elapsed_time = time.time() - shake_start_time
+        if elapsed_time >= screen_shake_duration:
+            # 흔들림 종료
+            screen_shake_intensity = 0
+            screen_shake_duration = 0
+            return 0, 0
+        else:
+            # 흔들림 오프셋 생성
+            offset_x = random.uniform(-screen_shake_intensity, screen_shake_intensity)
+            offset_y = random.uniform(-screen_shake_intensity, screen_shake_intensity)
+            return offset_x, offset_y
+    return 0, 0
+
+def draw_with_shake():
+    """모든 오브젝트에 흔들림 효과 적용하여 그리기"""
+    offset_x, offset_y = apply_screen_shake()  # 흔들림 오프셋 계산
+
+    for layer in world:
+        for obj in layer:
+            obj.draw(offset_x, offset_y)  # 흔들림 오프셋 적용
+
 
 def clear():
     for layer in world:

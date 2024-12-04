@@ -4,7 +4,8 @@ from game_world import world
 
 running = None
 stack = None
-
+screen_offset_x = 0
+screen_offset_y = 0
 
 def change_mode(mode):
     global stack

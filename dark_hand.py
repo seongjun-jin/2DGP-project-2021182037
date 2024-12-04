@@ -12,8 +12,8 @@ class hand:
         self.opacity = 1.0  # 손의 투명도 (1.0 = 불투명, 0.0 = 완전 투명)
         self.state = "rising"  # 상태: rising (올라감) -> holding (머무름) -> fading (사라짐)
         self.hold_timer = 0.0  # 머무르는 시간
-        self.rise_speed = 50  # y좌표가 올라가는 속도
-        self.fade_speed = 0.5  # 투명도가 줄어드는 속도
+        self.rise_speed = 70  # y좌표가 올라가는 속도
+        self.fade_speed = 1.5  # 투명도가 줄어드는 속도
         self.image = load_image('dark_hand.png')
 
     def update(self):
@@ -22,7 +22,7 @@ class hand:
             if self.y >= 50:  # 목표 위치에 도달
                 self.y = 50
                 self.state = "holding"
-                self.hold_timer = 0.3  # 0.5초 동안 머무름
+                self.hold_timer = 0.1  # 0.5초 동안 머무름
 
         elif self.state == "holding":  # 머무르는 상태
             self.hold_timer -= game_framework.frame_time

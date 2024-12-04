@@ -51,7 +51,7 @@ class Heart:
         self.effected_one = None
         if server.player.item_select and not self.removed:
             game_world.remove_object(self)
-            self.removed = True
+
 
     def get_bb(self):
         #하나의 튜플을 리턴

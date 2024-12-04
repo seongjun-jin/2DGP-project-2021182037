@@ -18,27 +18,26 @@ class Beam:
 
     def __init__(self, x, y):
         if Beam.image is None:
-            Beam.image = load_image('flash.png')
+            Beam.image = load_image('flash2.png')
         self.x = x
         self.y = y
         self.frame = 0
         self.frame_width = 250 / 6
 
     def draw(self):
-        frame_width = 219 / 6  # 각 프레임의 가로 너비
-        frame_x = int(self.frame) * int(frame_width)  # 현재 프레임의 시작 x 좌표
-        self.image.clip_draw(frame_x, 0, int(frame_width), 439, self.x, self.y, 200, 1000)
+        frame_width = 189 / 6  # 각 프레임의 가로 너비
+        self.image.clip_draw(int(self.frame) * int(frame_width), 0, int(frame_width), 419, self.x + 50, self.y - 1025, 300, 2000)
         draw_rectangle(*self.get_bb())
 
     def update(self):
         #self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 6
-        self.frame += FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
-        if self.frame >= 6:
+        self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 6
+        if self.frame >= 5:
             print("Removing beam object")
             game_world.remove_object(self)
 
     def get_bb(self):
-        return self.x - (250/6), self.y - 800, self.x + (250/6), self.y + 800
+        return self.x - 3* (189/6), self.y - 800, self.x + 3*(189/6), self.y + 600
 
     def handle_collision(self, group, other):
         if group == 'player:attack':

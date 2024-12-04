@@ -9,6 +9,7 @@ from Portal import portal
 from Boss1 import boss
 import Player
 import title_mode
+from hp import hp_bar
 
 PIXEL_PER_METER = (10.0 / 0.3) # 10 pixel 30 cm
 RUN_SPEED_KMPH = 20.0 # Km / Hour
@@ -23,7 +24,13 @@ FRAMES_PER_ACTION = 8
 def update():
     game_world.update()
     game_world.handle_collisions()
+
+    # 보스의 HP를 HP 바에 반영
+    if 'hp' in globals() and boss:  # boss가 존재할 때만 업데이트
+        hp.update(boss.hp, boss.Max_hp)
+
     delay(0.025)
+
 
 def draw():
     clear_canvas()
@@ -49,6 +56,8 @@ def handle_events():
 def init():
     global player
     global boss
+    global hp
+
     if player is None:  # 이전 모드에서 전달된 객체가 없으면 새로 생성
         print("Player object not passed, creating a new one.")
         player = Player.Player()  # Player 모듈에서 객체 생성
@@ -67,6 +76,9 @@ def init():
 
     background = B1_BG()
     game_world.add_object(background, 0)
+
+    hp = hp_bar(boss)
+    game_world.add_object(hp, 3)
 
     game_world.add_collision_pair('boss:player', player, None)
     game_world.add_collision_pair('boss:player', None, boss)

@@ -125,6 +125,8 @@ class Player:
         self.current_portal = None
         self.item_select = False
         self.current_item = None
+        self.select_item = None
+        self.select_item_image = None
         self.enter_bossroom = False
         self.state_machine = StateMachine(self)
         self.state_machine.start(Idle)
@@ -163,6 +165,8 @@ class Player:
             while self.hp < self.MAX_hp:
                 self.hp += 1
         self.heal = False
+        self.current_portal = None
+        self.item_select = None
 
         if self.hp <= 0 and not self.is_dead:
             self.die()
@@ -177,6 +181,9 @@ class Player:
             self.state_machine.draw()
             self.font.draw(self.x - 10, self.y + 50, f'{self.hp:02d}', (255, 255, 0))
             draw_rectangle(*self.get_bb())
+        if self.select_item_image:
+            self.select_item_image.draw(50, 550, 40, 40)
+
 
     def Jump(self):
         if not self.is_dead and self.is_jumping > 0:
@@ -247,6 +254,9 @@ class Player:
         print(f"Player acquired item: {type(item).__name__}")
         item.apply_effect(self)  # 아이템 효과를 플레이어에 적용
         #game_world.remove_object(item)  # 게임 월드에서 아이템 제거
+        self.select_item = item
+        self.select_item_image = item.image
+
 
 
 

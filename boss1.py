@@ -30,10 +30,12 @@ FRAMES_PER_ACTION = 8
 class boss:
     def __init__(self):
         self.x, self.y = 400,200
+        self.hp_bar = None
         self.frame = 0
         self.image = load_image("1.png")
-        self.Max_hp = 100
-        self.hp = self.Max_hp
+        self.max_hp = 100  # 최대 HP
+        self.current_hp = 100  # 현재 HP
+        self.hp = self.max_hp
         self.font = load_font('ENCR10B.TTF', 16)
         self.is_hit = False
         self.is_hit_timer = 0
@@ -52,46 +54,53 @@ class boss:
         self.frame = 0
 
     def update(self):
+        if self.is_beaten:
+            return  # 보스가 죽었으면 업데이트를 중지
+
+        # 디버깅용 확인
+        if self.hp_bar is None:
+            print("Error: hp_bar is not initialized")
+            return
+
+        # 현재 HP와 최대 HP 디버깅 출력
+        print(f"Updating HP Bar: Current HP = {self.current_hp}, Max HP = {self.max_hp}")
+        self.hp_bar.update(self.current_hp, self.max_hp)
+
+        # 나머지 업데이트 로직
         self.frame = (self.frame + 1) % 8
-        if self.is_hit:  # 일정 시간 후 다시 충돌 가능
+        if self.is_hit:
             self.is_hit_timer -= game_framework.frame_time
             if self.is_hit_timer <= 0:
                 self.is_hit = False
         if self.hp == 0:
             self.is_beaten = True
-        if self.bt:
-            self.bt.run()
-        if self.screen_shake_duration > 0:
-            elapsed_time = time.time() - self.shake_start_time
-            if elapsed_time >= self.screen_shake_duration:
-                self.screen_shake_intensity = 0
-                self.screen_shake_duration = 0
-            else:
-                # 흔들림 효과가 진행 중일 때, 화면 좌표 이동
-                game_framework.screen_offset_x = random.uniform(-self.screen_shake_intensity,
-                                                                self.screen_shake_intensity)
-                game_framework.screen_offset_y = random.uniform(-self.screen_shake_intensity,
-                                                                self.screen_shake_intensity)
-        else:
-            # 흔들림 효과가 없으면 화면을 원래 위치로 복원
-            game_framework.screen_offset_x = 0
-            game_framework.screen_offset_y = 0
+
+        # HP 바 업데이트
+        if self.hp_bar:
+            print(f"Updating HP Bar: Current HP = {self.current_hp}, Max HP = {self.max_hp}")
+            self.hp_bar.update(self.current_hp, self.max_hp)
+        self.bt.run()
 
     def draw(self):
-        if not self.is_beaten:
-            offset_x = game_framework.screen_offset_x
-            offset_y = game_framework.screen_offset_y
+        if self.is_beaten:
+            return  # 보스가 죽었으면 그리기를 중지
 
-            if self.face_dir == 1:
-                self.image.clip_draw(int(self.frame) * 75, 2700, 75, 105, self.x + offset_x, self.y + offset_y, 100,
-                                     100)
-            elif self.face_dir == -1:
-                self.image.clip_composite_draw((int(self.frame) * 75), 2700, 75, 105, 0, 'h', self.x + offset_x,
-                                               self.y + offset_y, 100, 100)
-            draw_rectangle(*self.get_bb())
-            self.font.draw(self.x - 10 + offset_x, self.y + 50 + offset_y, f'{self.hp:02d}', (255, 255, 0))
+        offset_x = game_framework.screen_offset_x
+        offset_y = game_framework.screen_offset_y
+
+        if self.face_dir == 1:
+            self.image.clip_draw(int(self.frame) * 75, 2700, 75, 105,
+                                 self.x + offset_x, self.y + offset_y, 100, 100)
         else:
-            game_world.remove_object(self)
+            self.image.clip_composite_draw(int(self.frame) * 75, 2700, 75, 105,
+                                           0, 'h', self.x + offset_x, self.y + offset_y, 100, 100)
+        self.font.draw(self.x - 10 + offset_x, self.y + 50 + offset_y,
+                       f'{self.current_hp:02d}', (255, 255, 0))
+
+        # HP 바 그리기
+        if self.hp_bar:
+            self.hp_bar.draw()
+        draw_rectangle(*self.get_bb())
 
     def get_bb(self):
         #하나의 튜플을 리턴
@@ -224,25 +233,15 @@ class boss:
         return BehaviorTree.RUNNING
 
     def move_to_player(self):
-        if not hasattr(self, 'wait_start'):
-            # 목표 위치 설정
-            self.tx, self.ty = server.player.x, 600
-            self.wait_start = None
+        if not hasattr(self, 'player'):
+            self.player = server.player
 
-        # 이동
-        self.move_slightly_to(self.tx, self.ty)
-
-        # 목표 위치에 도달했는지 확인
-        if self.distance_less_than(self.tx, self.ty, self.x, self.y, 5):
-            if not self.wait_start:  # 대기 시작 시간 기록
-                self.wait_start = time.time()
-            elif time.time() - self.wait_start >= 2:  # 2초 대기
-                del self.wait_start  # 대기 완료 후 초기화
-                return BehaviorTree.SUCCESS
-        else:
-            self.wait_start = None  # 이동 중에는 대기 초기화
-
-        return BehaviorTree.RUNNING
+        tx, ty = self.player.x, self.player.y
+        self.dir = math.atan2(ty - self.y, tx - self.x)
+        distance = RUN_SPEED_PPS * game_framework.frame_time
+        self.x += distance * math.cos(self.dir)
+        self.y += distance * math.sin(self.dir)
+        return BehaviorTree.SUCCESS
 
     def split_fire_ball(self):
         """보스의 위치에서 여러 방향으로 파이어볼 발사"""
@@ -349,7 +348,7 @@ class boss:
         if not hasattr(self, 'flash_start_time'):
             self.flash_start_time = time.time()
 
-        if time.time() - self.flash_start_time < 1:  # 1초 동안 빔 발사 유지
+        if time.time() - self.flash_start_time < 0.5:  # 1초 동안 빔 발사 유지
             beam = Beam(self.x, self.y)
             game_world.add_object(beam, 1)
             game_world.add_collision_pair('player:attack', None, beam)
@@ -497,7 +496,7 @@ class boss:
                         delay2, wander2, delay6, pattern3,
                         delay3, wander3, delay7, pattern4,
                         delay4, wander4, delay8, pattern5)
-
+        root = Sequence('배회 후 랜덤 패턴 실행', m7, a11)
         # BehaviorTree에 루트 설정
         self.bt = BehaviorTree(root)
 

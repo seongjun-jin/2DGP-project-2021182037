@@ -7,6 +7,9 @@ import server
 import bossroom1_mode
 #직접적인 공간수치가 아닌 프레임숫자, 시간으로 표현을 해라
 
+update_count = 0
+draw_count = 0
+
 
 PIXEL_PER_METER = (10.0 / 0.3)  # 10 pixel 30 cm
 RUN_SPEED_KMPH = 20.0  # Km / Hour
@@ -38,7 +41,7 @@ class Idle:
 
     @staticmethod
     def do(player):
-        player.frame = (player.frame + FRAMES_PER_ACTION*ACTION_PER_TIME*game_framework.frame_time) % 2
+        player.frame = (player.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 2
 
     @staticmethod
     def draw(player):
@@ -69,8 +72,9 @@ class Run:
 
     @staticmethod
     def do(player):
-        player.frame = (player.frame + FRAMES_PER_ACTION*ACTION_PER_TIME*game_framework.frame_time) % 8
-        player.x += player.dir * 10
+        player.frame = (player.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 8
+        player.x += player.dir * RUN_SPEED_PPS * game_framework.frame_time
+        print(f"Player frame: {player.frame}")
 
     @staticmethod
     def draw(player):
@@ -253,7 +257,7 @@ class Player:
     def Acquire_Item(self, item):
         print(f"Player acquired item: {type(item).__name__}")
         item.apply_effect(self)  # 아이템 효과를 플레이어에 적용
-        #game_world.remove_object(item)  # 게임 월드에서 아이템 제거
+        game_world.remove_object(item)  # 게임 월드에서 아이템 제거
         self.select_item = item
         self.select_item_image = item.image
 

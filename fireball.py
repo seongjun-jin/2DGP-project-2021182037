@@ -26,7 +26,7 @@ class fireball:
         self.frame = 0
 
     def draw(self):
-        self.image.clip_draw(0, 0, 73, 59, self.x, self.y, 100, 100)
+        self.image.clip_draw(0, 0, 73, 59, self.x, self.y, 80, 80)
         draw_rectangle(*self.get_bb())
 
     def update(self):

@@ -1,5 +1,6 @@
 import time
 import random
+from hp import hp_bar
 
 #배경 - 0 땅 - 1, 캐릭터 - 2
 world = [[], [], [], []]
@@ -13,8 +14,6 @@ def add_collision_pair(group, a, b):
         collision_pairs[group][0].append(a)
     if b:
         collision_pairs[group][1].append(b)
-
-
 
 # 흔들림 오프셋
 screen_shake_intensity = 0  # 흔들림 강도
@@ -73,7 +72,11 @@ def add_object(o, depth):
 def update():
     for layer in world:
         for o in layer:
+            # hp_bar 객체는 보스 업데이트에서 관리되므로 여기에선 업데이트하지 않음
+            if isinstance(o, hp_bar):
+                continue
             o.update()
+
 
 def render():
     for layer in world:

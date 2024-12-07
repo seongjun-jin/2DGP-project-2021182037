@@ -7,64 +7,75 @@ stack = None
 screen_offset_x = 0
 screen_offset_y = 0
 
+PIXEL_PER_METER = (10.0 / 0.3)  # 10 pixel 30 cm
+RUN_SPEED_KMPH = 20.0  # Km / Hour
+RUN_SPEED_MPM = (RUN_SPEED_KMPH * 1000.0 / 60.0)
+RUN_SPEED_MPS = (RUN_SPEED_MPM / 60.0)
+RUN_SPEED_PPS = (RUN_SPEED_MPS * PIXEL_PER_METER)
+
+# 프레임 타임 관련 변수
+frame_time = 0.0
+target_fps = 60  # 목표 FPS
+fixed_frame_time = 1.0 / target_fps  # 고정 프레임 타임 (선택)
+
+def get_frame_time():
+    """현재 프레임 타임을 반환"""
+    global frame_time
+    return frame_time
+
 def change_mode(mode):
     global stack
-    if (len(stack) > 0):
-        # execute the current mode's finish function
+    if len(stack) > 0:
         stack[-1].finish()
-        # remove the current mode
         stack.pop()
     game_world.clear_all()
     stack.append(mode)
     mode.init()
 
-
 def push_mode(mode):
     global stack
-    if (len(stack) > 0):
+    if len(stack) > 0:
         stack[-1].pause()
     stack.append(mode)
     mode.init()
 
-
 def pop_mode():
     global stack
-    if (len(stack) > 0):
-        # execute the current mode's finish function
+    if len(stack) > 0:
         stack[-1].finish()
-        # remove the current mode
         stack.pop()
 
-    # execute resume function of the previous mode
-    if (len(stack) > 0):
+    if len(stack) > 0:
         stack[-1].resume()
-
 
 def quit():
     global running
     running = False
 
-
 def run(start_mode):
-    global running, stack
+    global running, stack, frame_time
     running = True
     stack = [start_mode]
     start_mode.init()
 
-    global frame_time
-    frame_time = 0.0
-    current_time =  time.time()
+    current_time = time.time()
 
-    while (running):
+    while running:
         stack[-1].handle_events()
         stack[-1].update()
         stack[-1].draw()
+
+        # 프레임 타임 계산 및 FPS 제한
         frame_time = time.time() - current_time
-        frame_rate = 1.0 / frame_time
+        if frame_time < fixed_frame_time:
+            time.sleep(fixed_frame_time - frame_time)  # FPS 제한
+            frame_time = fixed_frame_time  # 강제 고정 프레임 타임
         current_time += frame_time
 
-    # repeatedly delete the top of the stack
-    while (len(stack) > 0):
+        # FPS 디버깅
+        print(f"FPS: {1.0 / frame_time:.2f}, Frame Time: {frame_time:.6f}")
+
+
+    while len(stack) > 0:
         stack[-1].finish()
         stack.pop()
-

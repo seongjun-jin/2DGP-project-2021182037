@@ -35,15 +35,24 @@ def update():
         # 보스 사망 체크
         if boss_instance.is_dead:
             print("Boss is dead! Transitioning to ending_mode...")
-            if not hasattr(boss_instance, 'death_timer'):
-                boss_instance.death_timer = time.time()  # 사망 타이머 설정
 
+            # death_timer를 한 번만 초기화
+            if not hasattr(boss_instance, 'death_timer'):
+                boss_instance.death_timer = time.time()
+
+            # death_timer 이후 경과 시간 계산
             elapsed_time = time.time() - boss_instance.death_timer
+            print(f"Elapsed time since death: {elapsed_time:.2f}s")
+
             if elapsed_time > 3.0:  # 3초 후 ending_mode로 전환
-                game_framework.change_mode(ending_mode)
+                if not hasattr(boss_instance, 'transitioned_to_ending'):
+                    boss_instance.transitioned_to_ending = True
+                    print("Changing to ending_mode...")
+                    game_framework.change_mode(ending_mode)
 
     game_world.handle_collisions()
     delay(0.025)
+
 
 def draw():
     clear_canvas()
@@ -64,7 +73,8 @@ def handle_events():
         if event.type == SDL_QUIT:
             game_framework.quit()
         elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
-            game_framework.change_mode(title_mode)
+            #game_framework.change_mode(title_mode)
+            pass
         else:
             player.handle_event(event)
 

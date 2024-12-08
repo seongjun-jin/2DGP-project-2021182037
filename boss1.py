@@ -12,7 +12,8 @@ import math
 from fireball import fireball
 from beam import Beam
 from dark_hand import hand
-#
+import ending_mode
+
 PIXEL_PER_METER = (10.0 / 0.3)  # 10 pixel 30 cm
 RUN_SPEED_KMPH = 20.0  # Km / Hour
 RUN_SPEED_MPM = (RUN_SPEED_KMPH * 1000.0 / 60.0)
@@ -131,39 +132,35 @@ class boss:
     def update(self):
         self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 8
 
-        # 보스가 죽었는지 확인
         if self.hp <= 0 and not self.is_dead:
             self.is_dead = True
             print("Boss is now dead")
-            game_framework.screen_color = (255, 255, 255)  # 화면을 하얗게 바꿈
-            self.death_timer = 0  # 타이머 초기화
-            self.boss_slain_timer = time.time()  # Boss Slain 표시 타이머 초기화
+            self.boss_slain_timer = time.time()
             self.display_boss_slain = True
 
-        # "Boss Slain" 문구 표시 로직
         if self.display_boss_slain:
             elapsed_time = time.time() - self.boss_slain_timer
-            if elapsed_time > 5.0:  # 3초 동안 표시
-                self.display_boss_slain = False  # 문구 표시 중지
+            if elapsed_time > 5.0:
+                self.display_boss_slain = False
 
-        # 죽음 연출 (폭발, 삭제)
         if self.is_dead:
-            self.y -= 0.5  # 보스 위치 하강
+            self.y -= 0.5
             self.explosion_timer += game_framework.frame_time
             if self.explosion_timer >= self.next_explosion_time:
                 explosion_x = self.x + random.uniform(-50, 50)
                 explosion_y = self.y + random.uniform(-50, 50)
                 explosion_obj = explosion(explosion_x, explosion_y)
                 game_world.add_object(explosion_obj, 2)
-                self.explosion_timer = 0  # 타이머 초기화
+                self.explosion_timer = 0
 
             self.death_timer += game_framework.frame_time
-            if self.death_timer > 5.0:  # 3초 후 보스 제거
-                if self in game_world.world[2]:  # 보스 객체가 존재하는지 확인
-                    game_world.remove_object(self)
-            return
+            if self.death_timer > 5.0:
+                if not hasattr(self, 'transitioned_to_ending'):
+                    self.transitioned_to_ending = True
+                    print("Transitioning to ending mode")
+                    game_framework.change_mode(ending_mode)
+                return
 
-        # 기존 업데이트 로직 유지
         if self.is_hit:
             self.is_hit_timer -= game_framework.frame_time
             if self.is_hit_timer <= 0:

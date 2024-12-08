@@ -4,7 +4,7 @@ from sdl2 import SDLK_ESCAPE, SDL_QUIT, SDL_KEYDOWN, SDLK_SPACE
 import game_framework
 
 def init():
-    global image
+    global image, bgm
     image = load_image('title3.png')
 
 def finish():

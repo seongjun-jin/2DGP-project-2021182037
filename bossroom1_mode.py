@@ -1,5 +1,5 @@
 from pico2d import *
-
+import ending_mode
 import server
 import game_world
 import game_framework
@@ -11,6 +11,7 @@ from Boss1 import boss
 import Player
 import title_mode
 from hp import hp_bar
+import time
 
 PIXEL_PER_METER = (10.0 / 0.3)  # 10 pixel 30 cm
 RUN_SPEED_KMPH = 20.0  # Km / Hour
@@ -22,12 +23,24 @@ ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
 FRAMES_PER_ACTION = 8
 
 def update():
+    global boss_instance
+
     print("Updating game world...")
     game_world.update()
 
     if boss_instance:
         print(f"Updating Boss: {boss_instance}")
         boss_instance.update()
+
+        # 보스 사망 체크
+        if boss_instance.is_dead:
+            print("Boss is dead! Transitioning to ending_mode...")
+            if not hasattr(boss_instance, 'death_timer'):
+                boss_instance.death_timer = time.time()  # 사망 타이머 설정
+
+            elapsed_time = time.time() - boss_instance.death_timer
+            if elapsed_time > 3.0:  # 3초 후 ending_mode로 전환
+                game_framework.change_mode(ending_mode)
 
     game_world.handle_collisions()
     delay(0.025)
@@ -91,6 +104,8 @@ def init():
     game_world.add_collision_pair('boss:player',player, boss_instance)
     game_world.add_collision_pair('boss:attack', boss_instance, None)
     game_world.add_collision_pair('player:attack', player, None)
+
+
 
 def pause():
     pass

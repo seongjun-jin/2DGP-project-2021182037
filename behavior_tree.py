@@ -25,15 +25,26 @@ class BehaviorTree:
     def __init__(self, root_node):
         self.root = root_node
         self.root.tag_condition()
+        self.current_action_name = None
+        self.root.set_behavior_tree(self)
 
     def run(self):
         print('\n========================================== NEW TICK =======================================================')
+        self.current_action_name = None  # 새 틱마다 초기화
         self.root.run()
         if self.root.value == BehaviorTree.SUCCESS:
             self.root.reset()
 
 
 class Node:
+    def __init__(self):
+        self.behavior_tree = None  # BehaviorTree 참조
+
+    def set_behavior_tree(self, behavior_tree):
+        self.behavior_tree = behavior_tree
+        for child in getattr(self, 'children', []):  # 자식 노드에도 전달
+            child.set_behavior_tree(behavior_tree)
+
     def add_child(self, child):
         self.children.append(child)
     def add_children(self, *children):
@@ -87,15 +98,6 @@ class Selector(Node):
         self.value = BehaviorTree.FAIL
         return self.value
 
-
-
-
-
-
-
-
-
-
 class Sequence(Node):
     def __init__(self, name, *nodes):
         self.children = list(nodes)
@@ -132,6 +134,7 @@ class Sequence(Node):
 
 class Action(Node):
     def __init__(self, name, func, *args):
+        super().__init__()
         self.name = name
         self.func = func
         self.args = list(args) if args else []
@@ -153,6 +156,9 @@ class Action(Node):
 
     @Node.show_result
     def run(self):
+        # 현재 실행 중인 액션 이름 업데이트
+        if self.behavior_tree:
+            self.behavior_tree.current_action_name = self.name
         self.value = self.func(*self.args)
         return self.value
 

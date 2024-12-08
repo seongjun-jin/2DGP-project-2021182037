@@ -24,6 +24,24 @@ TIME_PER_ACTION = 0.5
 ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
 FRAMES_PER_ACTION = 8
 
+class warning:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+        self.image = load_image("warning_sign.png")
+        self.alpha = 128  # 초기 알파 값 (0~255, 128은 반투명)
+
+    def update(self):
+        pass
+
+    def draw(self):
+        # 반투명하게 그리기
+        self.image.opacify(self.alpha / 255.0)  # 알파값을 0~1로 변환
+        self.image.clip_draw(
+            0, 0, 568, 439,
+            self.x, self.y, 100, 100
+        )
+
+
 class explosion:
     def __init__(self, x, y):
         self.x, self.y = x, y
@@ -93,6 +111,10 @@ class boss:
         self.explosions = []  # 폭발 리스트
         self.explosion_timer = 0  # 폭발 간격 타이머
         self.next_explosion_time = 0.3  # 다음 폭발까지 대기 시간
+        self.warning_sign = None
+        self.boss_slain_timer = None  # BOSS SLAIN 타이머
+        self.display_boss_slain = False  # BOSS SLAIN 문구 표시 여부
+        self.boss_slain_font = load_font('강원교육튼튼.TTF', 50)  # BOSS SLAIN 폰트
         self.build_behavior_tree()
         self.screen_shake_intensity = 0  # 흔들림 강도
         self.screen_shake_duration = 0  # 흔들림 지속 시간
@@ -108,38 +130,40 @@ class boss:
 
     def update(self):
         self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 8
-        if self.hp <= 0 and not self.is_dead :
+
+        # 보스가 죽었는지 확인
+        if self.hp <= 0 and not self.is_dead:
             self.is_dead = True
             print("Boss is now dead")
             game_framework.screen_color = (255, 255, 255)  # 화면을 하얗게 바꿈
             self.death_timer = 0  # 타이머 초기화
+            self.boss_slain_timer = time.time()  # Boss Slain 표시 타이머 초기화
+            self.display_boss_slain = True
 
+        # "Boss Slain" 문구 표시 로직
+        if self.display_boss_slain:
+            elapsed_time = time.time() - self.boss_slain_timer
+            if elapsed_time > 5.0:  # 3초 동안 표시
+                self.display_boss_slain = False  # 문구 표시 중지
+
+        # 죽음 연출 (폭발, 삭제)
         if self.is_dead:
-            # 폭발 이펙트 생성
-            self.y = self.y - 0.5
+            self.y -= 0.5  # 보스 위치 하강
             self.explosion_timer += game_framework.frame_time
-            game_world.remove_collision_object(self)
             if self.explosion_timer >= self.next_explosion_time:
-                # 보스 주변 무작위 위치에서 폭발 생성
                 explosion_x = self.x + random.uniform(-50, 50)
                 explosion_y = self.y + random.uniform(-50, 50)
                 explosion_obj = explosion(explosion_x, explosion_y)
                 game_world.add_object(explosion_obj, 2)
-                self.explosions.append(explosion_obj)
                 self.explosion_timer = 0  # 타이머 초기화
-            # 5초 후 보스 객체 제거
+
             self.death_timer += game_framework.frame_time
-            if self.death_timer > 3.0:
-                if self in game_world.world[2]:  # 객체가 존재하는지 확인
+            if self.death_timer > 5.0:  # 3초 후 보스 제거
+                if self in game_world.world[2]:  # 보스 객체가 존재하는지 확인
                     game_world.remove_object(self)
-                else:
-                    print("Warning: Attempted to remove a non-existing object.")
-                game_framework.screen_color = (0, 0, 0)  # 화면을 원래대로 돌림
             return
 
-        # 보스 HP가 0이면 죽음 상태로 전환
-
-        # 보스가 아직 살아있는 경우 기존 로직 실행
+        # 기존 업데이트 로직 유지
         if self.is_hit:
             self.is_hit_timer -= game_framework.frame_time
             if self.is_hit_timer <= 0:
@@ -166,7 +190,8 @@ class boss:
                                                0, 'h', self.x + offset_x, self.y + offset_y, 100, 100)
             self.font.draw(self.x - 10 + offset_x, self.y + 50 + offset_y,
                            f'{self.hp:02d}', (255, 255, 0))
-
+        if self.display_boss_slain:
+            self.boss_slain_font.draw(300, 300, "BOSS SLAIN", (255, 0, 0))
         # HP 바 그리기
         if self.hp_bar:
             self.hp_bar.draw()
@@ -316,6 +341,30 @@ class boss:
         self.y += distance * math.sin(self.dir)
         return BehaviorTree.SUCCESS
 
+    def warning_sign_action(self):
+        # 공격 범위 계산
+        attack_range_x, attack_range_y, attack_width, attack_height = self.calculate_attack_range()
+
+        # 손 소환 또는 빔 공격에만 경고 표시
+        if self.bt.current_action_name not in ["손 소환", "빔"]:
+            return BehaviorTree.SUCCESS
+
+        if not hasattr(self, 'warning_start_time'):
+            self.warning_start_time = time.time()  # Warning 시작 시간 기록
+
+            # Warning Sign 생성
+            self.warning_sign = warning(attack_range_x, attack_range_y, attack_width, attack_height)
+            game_world.add_object(self.warning_sign, 3)  # 게임 월드에 추가
+            return BehaviorTree.RUNNING
+
+        elif time.time() - self.warning_start_time > 1.5:  # 1.5초 경과 시 성공 반환
+            game_world.remove_object(self.warning_sign)
+            self.warning_sign = None
+            del self.warning_start_time
+            return BehaviorTree.SUCCESS
+
+        return BehaviorTree.RUNNING
+
     def split_fire_ball(self):
         """보스의 위치에서 여러 방향으로 파이어볼 발사"""
         if not hasattr(self, 'fireball_count'):
@@ -323,7 +372,7 @@ class boss:
 
         num_fireballs = 8  # 파이어볼 개수
         angle_step = 2 * math.pi / num_fireballs
-        speed = 20
+        speed = 10
 
         # 발사
         if self.fireball_count < num_fireballs:
@@ -380,8 +429,8 @@ class boss:
             if current_time - self.last_fire_time >= 0.05:  # 발사 간격 (0.2초)
                 # 각도를 라디안으로 변환
                 angle_radians = math.radians(self.fireball_angle)
-                velocity_x = math.cos(angle_radians) * 20
-                velocity_y = math.sin(angle_radians) * 20
+                velocity_x = math.cos(angle_radians) * 10
+                velocity_y = math.sin(angle_radians) * 10
 
                 # 파이어볼 생성
                 fireball_obj = fireball(self.x, self.y, velocity_x, velocity_y)
@@ -506,6 +555,37 @@ class boss:
 
         return BehaviorTree.RUNNING
 
+    def calculate_attack_range(self):
+        if self.bt.current_action_name == "손 소환":
+            return self.x, 50, 300, 50  # 손 소환: 중심 (x, y), 크기 (width, height)
+        elif self.bt.current_action_name == "빔":
+            return self.x, self.y + 50, 100, 200  # 빔: 중심 (x, y), 크기 (width, height)
+        return self.x, self.y, 0, 0  # 기본값
+
+    def warning_sign_action(self):
+        # 현재 실행 중인 액션 이름 확인
+        if self.bt.current_action_name not in ["손 소환", "빔"]:
+            return BehaviorTree.SUCCESS
+
+        # 공격 범위 계산
+        attack_range_x, attack_range_y, attack_width, attack_height = self.calculate_attack_range()
+
+        if not hasattr(self, 'warning_start_time'):
+            self.warning_start_time = time.time()  # Warning 시작 시간 기록
+
+            # Warning Sign 생성
+            self.warning_sign = warning(attack_range_x, attack_range_y)
+            game_world.add_object(self.warning_sign, 3)  # 게임 월드에 추가
+            return BehaviorTree.RUNNING
+
+        elif time.time() - self.warning_start_time > 1.5:  # 1.5초 경과 시 성공 반환
+            game_world.remove_object(self.warning_sign)
+            self.warning_sign = None
+            del self.warning_start_time
+            return BehaviorTree.SUCCESS
+
+        return BehaviorTree.RUNNING
+
     def build_behavior_tree(self):
         # 이동
         m1 = Action('왼쪽 위로 이동', self.move_to_left_up)
@@ -531,6 +611,8 @@ class boss:
         a18 = Action('Set random location', self.set_random_location)
         a19 = Action('Move to', self.move_to)
 
+        warning_action = Action('Warning Sign', self.warning_sign_action)
+
         # 2초 배회 체크
         c1 = check_wander_condition = Condition('2초 배회 체크', self.check_wander_time)
 
@@ -552,10 +634,10 @@ class boss:
         pattern1 = Sequence('왼쪽 위 이동 + 발사', m1, a7, m2, a8, m3, a9, m4, a10)
         pattern2 = Sequence('가운데 위 이동 후 아래로 발사', m6, a15)
         pattern3 = Sequence('가운데 이동 + 시계방향 발사', m5, a14)
-        pattern4 = Sequence('손이 올라오다', m5, a16)
+        pattern4 = Sequence('손이 올라오다', m5, warning_action, a16)
         pattern5 = Sequence(
             '가운데 이동 + 발사',
-            Sequence('왼쪽 위로 이동 + 빔 발사', m7, a11),
+            Sequence('왼쪽 위로 이동 + 빔 발사', m7, warning_action, a11),
         )
 
         #all_pattern

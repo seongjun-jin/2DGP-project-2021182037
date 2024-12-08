@@ -1,5 +1,5 @@
 import play_mode
-from pico2d import clear_canvas, update_canvas, load_image, get_events
+from pico2d import clear_canvas, update_canvas, load_image, get_events, load_music
 from sdl2 import SDLK_ESCAPE, SDL_QUIT, SDL_KEYDOWN, SDLK_SPACE
 import game_framework
 
@@ -7,9 +7,18 @@ def init():
     global image, bgm
     image = load_image('title3.png')
 
+    bgm = load_music('Main Menu.mp3')  # 배경음악 파일 경로
+    bgm.set_volume(32)  # 볼륨 설정 (0~128)
+    bgm.repeat_play()  # 반복 재생
+
 def finish():
-    global image
+    global image, bgm
     del image
+
+    # 배경음악 정리
+    if bgm:
+        bgm.stop()
+        del bgm
 
 def handle_events():
     events = get_events()

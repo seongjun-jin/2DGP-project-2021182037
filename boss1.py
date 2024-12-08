@@ -91,6 +91,7 @@ class hp_bar:
 
 class boss:
     def __init__(self):
+        self.death_completed = False
         self.x, self.y = 400,200
         self.hp_bar = None
         self.frame = 0
@@ -134,17 +135,18 @@ class boss:
 
         if self.hp <= 0 and not self.is_dead:
             self.is_dead = True
-            print("Boss is now dead")
-            self.boss_slain_timer = time.time()
+            if not self.boss_slain_timer:  # 죽은 시간 기록
+                self.boss_slain_timer = time.time()
             self.display_boss_slain = True
 
-        if self.display_boss_slain:
-            elapsed_time = time.time() - self.boss_slain_timer
-            if elapsed_time > 5.0:
-                self.display_boss_slain = False
-
         if self.is_dead:
-            self.y -= 0.5
+            self.y = self.y - 0.5
+            elapsed_time = time.time() - self.boss_slain_timer
+            if elapsed_time > 5.0 and not self.death_completed:
+                self.death_completed = True
+                game_framework.change_mode(ending_mode)  # 모드 전환
+                return  # 이후 동작 차단
+
             self.explosion_timer += game_framework.frame_time
             if self.explosion_timer >= self.next_explosion_time:
                 explosion_x = self.x + random.uniform(-50, 50)
@@ -152,14 +154,7 @@ class boss:
                 explosion_obj = explosion(explosion_x, explosion_y)
                 game_world.add_object(explosion_obj, 2)
                 self.explosion_timer = 0
-
-            self.death_timer += game_framework.frame_time
-            if self.death_timer > 5.0:
-                if not hasattr(self, 'transitioned_to_ending'):
-                    self.transitioned_to_ending = True
-                    print("Transitioning to ending mode")
-                    game_framework.change_mode(ending_mode)
-                return
+            return  # 죽은 상태에서는 추가 행동 없음
 
         if self.is_hit:
             self.is_hit_timer -= game_framework.frame_time
@@ -167,32 +162,31 @@ class boss:
                 self.is_hit = False
 
         self.hp_bar.update(self.hp, self.max_hp)
-        self.bt.run()
+
+        if not self.is_dead:
+            self.bt.run()
 
     def draw(self):
-        offset_x = game_framework.screen_offset_x
-        offset_y = game_framework.screen_offset_y
-
         if self.is_dead:
-            #return  # 보스가 죽었으면 그리기를 중지
-            self.dead_image.clip_draw(int(self.frame) * int(676/9), 0, int(676/9), 100,
-                                 self.x, self.y, 100, 100)
+            # 죽은 상태에서 폭발 연출
+            self.dead_image.clip_draw(int(self.frame) * int(676 / 9), 0, int(676 / 9), 100,
+                                      self.x, self.y, 100, 100)
 
-        elif not self.is_dead:
+            # "BOSS SLAIN" 문구 표시
+            if self.display_boss_slain:
+                self.boss_slain_font.draw(300, 300, "BOSS SLAIN", (255, 0, 0))
+        else:
+            # 살아있는 동안 보스 렌더링
             if self.face_dir == 1:
-                self.image.clip_draw(int(self.frame) * 75, 2700, 75, 105,
-                                     self.x + offset_x, self.y + offset_y, 100, 100)
+                self.image.clip_draw(int(self.frame) * 75, 2700, 75, 105, self.x, self.y, 100, 100)
             else:
                 self.image.clip_composite_draw(int(self.frame) * 75, 2700, 75, 105,
-                                               0, 'h', self.x + offset_x, self.y + offset_y, 100, 100)
-            self.font.draw(self.x - 10 + offset_x, self.y + 50 + offset_y,
-                           f'{self.hp:02d}', (255, 255, 0))
-        if self.display_boss_slain:
-            self.boss_slain_font.draw(300, 300, "BOSS SLAIN", (255, 0, 0))
+                                               0, 'h', self.x, self.y, 100, 100)
+
         # HP 바 그리기
         if self.hp_bar:
             self.hp_bar.draw()
-        draw_rectangle(*self.get_bb())
+
 
     def get_bb(self):
         #하나의 튜플을 리턴
@@ -214,6 +208,7 @@ class boss:
 
     def start_screen_shake(self, intensity, duration):
         """화면 흔들림 효과를 시작"""
+        pass
     def move_slightly_to(self, tx, ty):
         if not (0 <= tx <= 800 and 0 <= ty <= 600):
             raise ValueError(f"Invalid target position: tx={tx}, ty={ty}")
@@ -414,6 +409,32 @@ class boss:
 
         return BehaviorTree.SUCCESS
 
+    def fireball_rain2(self):  # 하늘에서 불비가 내려옴
+        num_failed_fireballs = 10
+        fire_step = 100
+        speed = -10
+        start_x = 500  # 중앙 위치 (필요에 따라 조정)
+
+        for i in range(num_failed_fireballs):
+            velocity_y = speed
+
+            # 지그재그 패턴 계산
+            if i % 2 == 0:  # 짝수 인덱스: 왼쪽
+                x_position = start_x - (fire_step * (i // 2))
+            else:  # 홀수 인덱스: 오른쪽
+                x_position = start_x + (fire_step * (i // 2))
+
+            y_position = 800  # 고정된 높이 (필요시 변경 가능)
+
+            # Fireball 객체 생성
+            fireball_obj = fireball(x_position, y_position, 0, velocity_y)
+
+            # 게임 월드에 객체 추가
+            game_world.add_object(fireball_obj, 1)
+            game_world.add_collision_pair('player:attack', None, fireball_obj)
+
+        return BehaviorTree.SUCCESS
+
     def split_in_center(self):
         """12시 방향부터 30도씩 돌아가며 순서대로 발사"""
         if not hasattr(self, 'fireball_angle'):
@@ -583,6 +604,16 @@ class boss:
 
         return BehaviorTree.RUNNING
 
+    def flashing_warning(self):
+        if not hasattr(self, 'warning_start_time'):
+            self.warning_start_time = time.time()
+        if time.time() - self.warning_start_time > 1.0:  # 1초 동안 경고 표시
+            del self.warning_start_time
+            return BehaviorTree.SUCCESS
+        # 경고 애니메이션
+        self.warning_sign = warning(self.x, self.y)
+        return BehaviorTree.RUNNING
+
     def build_behavior_tree(self):
         # 이동
         m1 = Action('왼쪽 위로 이동', self.move_to_left_up)
@@ -603,15 +634,20 @@ class boss:
         a13 = Action('빔', self.final_flash)
         a14 = Action('시계방향 발사', self.split_in_center)
         a15 = Action('불비', self.fireball_rain)
-        a16 = Action('손 소환', self.fire_wave)
-        a17 = Action('쉼', self.break_time)
-        a18 = Action('Set random location', self.set_random_location)
-        a19 = Action('Move to', self.move_to)
+        a16 = Action('불비2', self.fireball_rain2)
+        a17 = Action('손 소환', self.fire_wave)
+        a18 = Action('쉼', self.break_time)
+        a19 = Action('Set random location', self.set_random_location)
+        a20 = Action('Move to', self.move_to)
+        a21 = Action('불비', self.fireball_rain)
+        a22 = Action('불비2', self.fireball_rain2)
 
         warning_action = Action('Warning Sign', self.warning_sign_action)
 
         # 2초 배회 체크
         c1 = check_wander_condition = Condition('2초 배회 체크', self.check_wander_time)
+
+        warning = Action('경고', self.flashing_warning)
 
         # 배회
         wander1 = Action('배회1', self.wander_logic)
@@ -628,13 +664,13 @@ class boss:
         delay8 = Action('전환 대기', self.transition_delay)
 
         #패턴
-        pattern1 = Sequence('왼쪽 위 이동 + 발사', m1, a7, m2, a8, m3, a9, m4, a10)
-        pattern2 = Sequence('가운데 위 이동 후 아래로 발사', m6, a15)
-        pattern3 = Sequence('가운데 이동 + 시계방향 발사', m5, a14)
-        pattern4 = Sequence('손이 올라오다', m5, warning_action, a16)
+        pattern1 = Sequence('왼쪽 위 이동 + 발사', warning, m1, a7, m2, a8, m3, a9, m4, a10)
+        pattern2 = Sequence('가운데 위 이동 후 아래로 발사', warning, m6, a15, a16, a21, a22)
+        pattern3 = Sequence('가운데 이동 + 시계방향 발사', warning, m5, a14)
+        pattern4 = Sequence('손이 올라오다', warning, m5, warning_action, a16)
         pattern5 = Sequence(
             '가운데 이동 + 발사',
-            Sequence('왼쪽 위로 이동 + 빔 발사', m7, warning_action, a11),
+            Sequence('왼쪽 위로 이동 + 빔 발사', warning, m7, warning_action, a11),
         )
 
         #all_pattern

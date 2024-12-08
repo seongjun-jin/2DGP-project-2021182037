@@ -70,7 +70,7 @@ class Heart:
                 player.MAX_hp += 1
                 player.hp = min(player.MAX_hp, player.hp + 1)  # 체력을 최대값으로 회복
                 print(f"Sword effect applied! attack_force increased to {player.attack_force}")
-                #game_world.remove_object(self)
+                game_world.remove_object(self)
                 self.removed = True
                 server.player.item_select = True
 

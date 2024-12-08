@@ -22,6 +22,35 @@ TIME_PER_ACTION = 0.5
 ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
 FRAMES_PER_ACTION = 8
 
+from pico2d import load_image, draw_rectangle, load_font
+import game_framework
+from Boss1 import boss
+
+PIXEL_PER_METER = (10.0 / 0.3)  # 10 pixel 30 cm
+RUN_SPEED_KMPH = 20.0  # Km / Hour
+RUN_SPEED_MPM = (RUN_SPEED_KMPH * 1000.0 / 60.0)
+RUN_SPEED_MPS = (RUN_SPEED_MPM / 60.0)
+RUN_SPEED_PPS = (RUN_SPEED_MPS * PIXEL_PER_METER)
+
+TIME_PER_ACTION = 0.5
+ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
+FRAMES_PER_ACTION = 8
+
+class player_hp:
+    def __init__(self, player):
+        self.player = player
+        self.x, self.y = 25, 25  # 체력 바 위치 (왼쪽 상단)
+        self.heart_width = 60  # 하트 하나의 너비
+        self.image = load_image("player_hp.png")  # 하트 이미지를 로드
+
+    def update(self):
+        pass
+
+    def draw(self):
+        for i in range(self.player.hp):  # 현재 체력만큼만 하트를 그립니다.
+            x_pos = self.x + i * self.heart_width  # 각 하트의 위치 계산
+            self.image.clip_draw(0, 0, self.heart_width, 50, x_pos, self.y, self.heart_width, 50)
+
 class Idle:
     @staticmethod
     def enter(player, e):
@@ -110,6 +139,7 @@ class Player:
         self.y = 50
         self.MAX_hp = 5
         self.hp = self.MAX_hp
+        self.hp_bar = player_hp(self)
         self.frame = 0
         self.image = load_image("player(1).png")
         self.dir = 0
@@ -184,9 +214,9 @@ class Player:
         else:
             self.state_machine.draw()
             self.font.draw(self.x - 10, self.y + 50, f'{self.hp:02d}', (255, 255, 0))
-            draw_rectangle(*self.get_bb())
         if self.select_item_image:
             self.select_item_image.draw(50, 550, 40, 40)
+        self.hp_bar.draw()
 
 
     def Jump(self):

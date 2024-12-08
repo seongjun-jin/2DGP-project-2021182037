@@ -26,7 +26,11 @@ def draw():
 
 
 def finish():
+    global bgm  # bgm 변수를 전역 변수로 선언
     game_world.clear()
+    if bgm:
+        bgm.stop()
+        del bgm
 
 
 def handle_events():
@@ -38,8 +42,12 @@ def handle_events():
             pass
 
 def init():
+    global bgm
     background = ending()
     game_world.add_object(background, 0)
+    bgm = load_music('Pizza Time.mp3')  # 배경음악 파일 경로
+    bgm.set_volume(32)  # 볼륨 설정 (0~128)
+    bgm.repeat_play()  # 반복 재생
     pass
 
 def pause():

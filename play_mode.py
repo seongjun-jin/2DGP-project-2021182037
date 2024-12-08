@@ -35,8 +35,12 @@ def draw():
     update_canvas()
 
 def finish():
-    game_world.clear()
-    pass
+    global image, bgm
+
+    # 배경음악 정리
+    if bgm:
+        bgm.stop()
+        del bgm
 
 
 def handle_events():
@@ -57,7 +61,7 @@ def init():
     global sword
     global heart
     global boss
-
+    global bgm
     #boss = boss()
     #game_world.add_object(boss, 2)
 
@@ -94,7 +98,9 @@ def init():
 
     #game_world.add_collision_pair('player:bonfire', server.player, None)
     #game_world.add_collision_pair('player:bonfire', None, bonfire)
-
+    bgm = load_music('play.mp3')  # 배경음악 파일 경로
+    bgm.set_volume(32)  # 볼륨 설정 (0~128)
+    bgm.repeat_play()  # 반복 재생
 
 def pause():
     pass

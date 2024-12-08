@@ -25,33 +25,19 @@ FRAMES_PER_ACTION = 8
 def update():
     global boss_instance
 
-    print("Updating game world...")
     game_world.update()
 
     if boss_instance:
-        print(f"Updating Boss: {boss_instance}")
         boss_instance.update()
 
-        # 보스 사망 체크
-        if boss_instance.is_dead:
-            print("Boss is dead! Transitioning to ending_mode...")
-
-            # death_timer를 한 번만 초기화
-            if not hasattr(boss_instance, 'death_timer'):
-                boss_instance.death_timer = time.time()
-
-            # death_timer 이후 경과 시간 계산
-            elapsed_time = time.time() - boss_instance.death_timer
-            print(f"Elapsed time since death: {elapsed_time:.2f}s")
-
-            if elapsed_time > 3.0:  # 3초 후 ending_mode로 전환
-                if not hasattr(boss_instance, 'transitioned_to_ending'):
-                    boss_instance.transitioned_to_ending = True
-                    print("Changing to ending_mode...")
-                    game_framework.change_mode(ending_mode)
+        # 보스 사망 이벤트가 끝났는지 확인
+        #if boss_instance.is_dead and boss_instance.death_completed:
+        #    print("Boss death event finished. Transitioning to ending_mode...")
+        #    game_framework.change_mode(ending_mode)  # 엔딩 모드로 전환
 
     game_world.handle_collisions()
     delay(0.025)
+
 
 
 def draw():
@@ -64,8 +50,11 @@ def draw():
 
 
 def finish():
+    global bgm
     game_world.clear()
-
+    if bgm:
+        bgm.stop()
+        del bgm
 
 def handle_events():
     events = get_events()
@@ -81,7 +70,7 @@ def handle_events():
 
 def init():
     global player, boss_instance, hp
-
+    global bgm
     # 플레이어 객체 초기화
     if player is None:  # 이전 모드에서 전달된 객체가 없으면 새로 생성
         print("Player object not passed, creating a new one.")
@@ -115,7 +104,9 @@ def init():
     game_world.add_collision_pair('boss:attack', boss_instance, None)
     game_world.add_collision_pair('player:attack', player, None)
 
-
+    bgm = load_music('battle.mp3')  # 배경음악 파일 경로
+    bgm.set_volume(32)  # 볼륨 설정 (0~128)
+    bgm.repeat_play()  # 반복 재생
 
 def pause():
     pass

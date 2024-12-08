@@ -21,7 +21,7 @@ class Slash:
             Slash.image = load_image('slash.png')
         self.x, self.y, self.frame, self.dir = x, y, 0, face_dir
         self.attacker = None
-        self.is_attacking = False
+        self.is_attacking = True
 
     def draw(self):
 
@@ -38,6 +38,7 @@ class Slash:
             print(f'boss.is_hit = {boss.is_hit}')
             if self.attacker:
                 self.attacker.is_attacking = False
+        draw_rectangle(*self.get_bb())
 
     def update(self):
         self.frame = (self.frame + FRAMES_PER_ACTION*ACTION_PER_TIME*game_framework.frame_time) % FRAMES_PER_ACTION
@@ -55,7 +56,6 @@ class Slash:
         pass
 
     def handle_collision(self, group, other):
-        # fill here
         if group == 'boss:attack':
             self.is_attacking = True
             pass

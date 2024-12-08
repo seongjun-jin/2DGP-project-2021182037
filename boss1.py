@@ -24,6 +24,27 @@ TIME_PER_ACTION = 0.5
 ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
 FRAMES_PER_ACTION = 8
 
+class hp_bar:
+    def __init__(self, boss):
+        self.hp_ratio = None
+        self.boss = boss
+        self.hp_image = load_image("hp.png")
+        self.back_image = load_image("hp_bar.png")
+        self.hp_width = 588  # 초기 너비 설정
+        self.x, self.y = 400, 580  # HP 바 위치
+
+    def update(self, hp, max_hp):
+        self.hp_ratio = hp / max_hp if max_hp > 0 else 0
+        self.hp_width = 588 * self.hp_ratio  # HP 비율에 따라 너비 조정
+        print(f"HP Bar Updated: {self.hp_ratio * 100:.1f}%")
+
+    def draw(self):
+        # Draw the HP background
+        self.back_image.clip_draw(0, 0, 616, 83, self.x, self.y - 40)
+
+        # Draw the HP bar according to current HP
+        self.hp_image.clip_draw(0, 0, int(self.hp_width), 30, self.x - (588 - self.hp_width) / 2, self.y - 40)
+
 
 
 
@@ -33,8 +54,8 @@ class boss:
         self.hp_bar = None
         self.frame = 0
         self.image = load_image("1.png")
-        self.max_hp = 100  # 최대 HP
-        self.current_hp = 100  # 현재 HP
+        self.max_hp = 50  # 최대 HP
+        #self.current_hp = 100  # 현재 HP
         self.hp = self.max_hp
         self.font = load_font('ENCR10B.TTF', 16)
         self.is_hit = False
@@ -49,6 +70,9 @@ class boss:
         self.shake_start_time = 0  # 흔들림 시작 시간
         if self.image is None:
             print("Image failed to load")
+        self.hp_bar = hp_bar(self)  # 여기 추가
+        if self.image is None:
+            print("Image failed to load")
 
     def handle_event(self):
         self.frame = 0
@@ -57,28 +81,20 @@ class boss:
         if self.is_beaten:
             return  # 보스가 죽었으면 업데이트를 중지
 
-        # 디버깅용 확인
         if self.hp_bar is None:
             print("Error: hp_bar is not initialized")
             return
 
-        # 현재 HP와 최대 HP 디버깅 출력
-        print(f"Updating HP Bar: Current HP = {self.current_hp}, Max HP = {self.max_hp}")
-        self.hp_bar.update(self.current_hp, self.max_hp)
+        print(f"Updating HP Bar: Current HP = {self.hp}, Max HP = {self.max_hp}")
+        self.hp_bar.update(self.hp, self.max_hp)  # HP 바 업데이트
 
-        # 나머지 업데이트 로직
-        self.frame = (self.frame + 1) % 8
         if self.is_hit:
             self.is_hit_timer -= game_framework.frame_time
             if self.is_hit_timer <= 0:
                 self.is_hit = False
-        if self.hp == 0:
-            self.is_beaten = True
 
-        # HP 바 업데이트
-        if self.hp_bar:
-            print(f"Updating HP Bar: Current HP = {self.current_hp}, Max HP = {self.max_hp}")
-            self.hp_bar.update(self.current_hp, self.max_hp)
+        if self.hp <= 0:
+            self.is_beaten = True
         self.bt.run()
 
     def draw(self):
@@ -95,7 +111,7 @@ class boss:
             self.image.clip_composite_draw(int(self.frame) * 75, 2700, 75, 105,
                                            0, 'h', self.x + offset_x, self.y + offset_y, 100, 100)
         self.font.draw(self.x - 10 + offset_x, self.y + 50 + offset_y,
-                       f'{self.current_hp:02d}', (255, 255, 0))
+                       f'{self.hp:02d}', (255, 255, 0))
 
         # HP 바 그리기
         if self.hp_bar:
@@ -109,13 +125,16 @@ class boss:
         pass
 
     def handle_collision(self, group, other):
-        # fill here
         if group == 'boss:player':
+            print("Collision with player detected!")
             pass
-        elif group == 'boss:attack'and not self.is_hit and other.is_attacking:
-            self.hp -= 1
-            self.is_hit = True
-            self.is_hit_timer = 0.5
+        elif group == 'boss:attack' and not self.is_hit:
+            print(f"Collision with attack: {type(other).__name__}, is_attacking: {other.is_attacking}")
+            if other.is_attacking:
+                self.hp -= 1
+                self.is_hit = True
+                self.is_hit_timer = 0.5
+                print(f"Boss HP reduced to {self.hp}.")
 
     def start_screen_shake(self, intensity, duration):
         """화면 흔들림 효과를 시작"""
@@ -496,7 +515,7 @@ class boss:
                         delay2, wander2, delay6, pattern3,
                         delay3, wander3, delay7, pattern4,
                         delay4, wander4, delay8, pattern5)
-        root = Sequence('배회 후 랜덤 패턴 실행', m7, a11)
+        #root = Sequence('배회 후 랜덤 패턴 실행', m7, a11)
         # BehaviorTree에 루트 설정
         self.bt = BehaviorTree(root)
 

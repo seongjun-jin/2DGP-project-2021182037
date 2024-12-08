@@ -76,6 +76,7 @@ class boss:
         self.hp_bar = None
         self.frame = 0
         self.image = load_image("1.png")
+        self.dead_image = load_image("boss_dead.png")
         self.max_hp = 5  # 최대 HP
         #self.current_hp = 100  # 현재 HP
         self.hp = self.max_hp
@@ -106,23 +107,30 @@ class boss:
         self.frame = 0
 
     def update(self):
+        self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 8
+        if self.hp <= 0 and not self.is_dead :
+            self.is_dead = True
+            print("Boss is now dead")
+            game_framework.screen_color = (255, 255, 255)  # 화면을 하얗게 바꿈
+            self.death_timer = 0  # 타이머 초기화
+
         if self.is_dead:
             # 폭발 이펙트 생성
-            self.y = self.y - 1
+            self.y = self.y - 0.5
             self.explosion_timer += game_framework.frame_time
-
+            game_world.remove_collision_object(self)
             if self.explosion_timer >= self.next_explosion_time:
                 # 보스 주변 무작위 위치에서 폭발 생성
                 explosion_x = self.x + random.uniform(-50, 50)
                 explosion_y = self.y + random.uniform(-50, 50)
                 explosion_obj = explosion(explosion_x, explosion_y)
-                game_world.add_object(explosion_obj, 1)
+                game_world.add_object(explosion_obj, 2)
                 self.explosions.append(explosion_obj)
                 self.explosion_timer = 0  # 타이머 초기화
             # 5초 후 보스 객체 제거
             self.death_timer += game_framework.frame_time
-            if self.death_timer > 5.0:
-                if self in game_world.world[1]:  # 객체가 존재하는지 확인
+            if self.death_timer > 3.0:
+                if self in game_world.world[2]:  # 객체가 존재하는지 확인
                     game_world.remove_object(self)
                 else:
                     print("Warning: Attempted to remove a non-existing object.")
@@ -130,10 +138,6 @@ class boss:
             return
 
         # 보스 HP가 0이면 죽음 상태로 전환
-        if self.hp <= 0 and not self.is_dead :
-            self.is_dead = True
-            game_framework.screen_color = (255, 255, 255)  # 화면을 하얗게 바꿈
-            self.death_timer = 0  # 타이머 초기화
 
         # 보스가 아직 살아있는 경우 기존 로직 실행
         if self.is_hit:
@@ -145,21 +149,23 @@ class boss:
         self.bt.run()
 
     def draw(self):
-        if self.is_dead:
-            #return  # 보스가 죽었으면 그리기를 중지
-            pass
-
         offset_x = game_framework.screen_offset_x
         offset_y = game_framework.screen_offset_y
 
-        if self.face_dir == 1:
-            self.image.clip_draw(int(self.frame) * 75, 2700, 75, 105,
-                                 self.x + offset_x, self.y + offset_y, 100, 100)
-        else:
-            self.image.clip_composite_draw(int(self.frame) * 75, 2700, 75, 105,
-                                           0, 'h', self.x + offset_x, self.y + offset_y, 100, 100)
-        self.font.draw(self.x - 10 + offset_x, self.y + 50 + offset_y,
-                       f'{self.hp:02d}', (255, 255, 0))
+        if self.is_dead:
+            #return  # 보스가 죽었으면 그리기를 중지
+            self.dead_image.clip_draw(int(self.frame) * int(676/9), 0, int(676/9), 100,
+                                 self.x, self.y, 100, 100)
+
+        elif not self.is_dead:
+            if self.face_dir == 1:
+                self.image.clip_draw(int(self.frame) * 75, 2700, 75, 105,
+                                     self.x + offset_x, self.y + offset_y, 100, 100)
+            else:
+                self.image.clip_composite_draw(int(self.frame) * 75, 2700, 75, 105,
+                                               0, 'h', self.x + offset_x, self.y + offset_y, 100, 100)
+            self.font.draw(self.x - 10 + offset_x, self.y + 50 + offset_y,
+                           f'{self.hp:02d}', (255, 255, 0))
 
         # HP 바 그리기
         if self.hp_bar:

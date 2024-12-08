@@ -1,6 +1,7 @@
 import time
 import game_world
 from game_world import world
+from pico2d import draw_rectangle
 
 running = None
 stack = None
@@ -17,6 +18,17 @@ RUN_SPEED_PPS = (RUN_SPEED_MPS * PIXEL_PER_METER)
 frame_time = 0.0
 target_fps = 60  # 목표 FPS
 fixed_frame_time = 1.0 / target_fps  # 고정 프레임 타임 (선택)
+
+screen_color = (0, 0, 0)  # 기본 화면 색상 (검정색)
+
+def fill_rectangle(x1, y1, x2, y2, color):
+    r, g, b = color
+    #set_color(r, g, b)
+    draw_rectangle(x1, y1, x2, y2)
+
+def clear_canvas():
+    global screen_color
+    #fill_rectangle(0, 0, get_canvas_width(), get_canvas_height(), screen_color)
 
 def get_frame_time():
     """현재 프레임 타임을 반환"""

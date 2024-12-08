@@ -24,6 +24,28 @@ TIME_PER_ACTION = 0.5
 ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
 FRAMES_PER_ACTION = 8
 
+class explosion:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+        self.image = load_image("explosion.png")
+        self.width = 1054 / 7
+        self.height = 223
+        self.frame = 0
+        self.timer = 0
+
+    def update(self):
+        self.timer += game_framework.frame_time
+        if self.timer > 0.1:  # 0.1초마다 다음 프레임으로
+            self.frame += 1
+            self.timer = 0
+        if self.frame >= 7:  # 마지막 프레임까지 재생되면 삭제
+            game_world.remove_object(self)
+
+    def draw(self):
+        self.image.clip_draw(
+            int(self.frame) * int(self.width), 0, int(self.width), int(self.height),
+            self.x, self.y, 100, 100
+        )
 class hp_bar:
     def __init__(self, boss):
         self.hp_ratio = None
@@ -54,7 +76,7 @@ class boss:
         self.hp_bar = None
         self.frame = 0
         self.image = load_image("1.png")
-        self.max_hp = 50  # 최대 HP
+        self.max_hp = 5  # 최대 HP
         #self.current_hp = 100  # 현재 HP
         self.hp = self.max_hp
         self.font = load_font('ENCR10B.TTF', 16)
@@ -63,7 +85,13 @@ class boss:
         self.face_dir = 1
         self.speed = 5
         self.tx, self.ty = 0,0
-        self.is_beaten = False
+        #self.is_beaten = False
+        self.is_dead = False  # 보스가 죽었는지 확인하는 플래그
+        self.death_timer = 0  # 죽는 연출 타이머
+        self.explosion_added = False
+        self.explosions = []  # 폭발 리스트
+        self.explosion_timer = 0  # 폭발 간격 타이머
+        self.next_explosion_time = 0.3  # 다음 폭발까지 대기 시간
         self.build_behavior_tree()
         self.screen_shake_intensity = 0  # 흔들림 강도
         self.screen_shake_duration = 0  # 흔들림 지속 시간
@@ -78,28 +106,48 @@ class boss:
         self.frame = 0
 
     def update(self):
-        if self.is_beaten:
-            return  # 보스가 죽었으면 업데이트를 중지
+        if self.is_dead:
+            # 폭발 이펙트 생성
+            self.y = self.y - 1
+            self.explosion_timer += game_framework.frame_time
 
-        if self.hp_bar is None:
-            print("Error: hp_bar is not initialized")
+            if self.explosion_timer >= self.next_explosion_time:
+                # 보스 주변 무작위 위치에서 폭발 생성
+                explosion_x = self.x + random.uniform(-50, 50)
+                explosion_y = self.y + random.uniform(-50, 50)
+                explosion_obj = explosion(explosion_x, explosion_y)
+                game_world.add_object(explosion_obj, 1)
+                self.explosions.append(explosion_obj)
+                self.explosion_timer = 0  # 타이머 초기화
+            # 5초 후 보스 객체 제거
+            self.death_timer += game_framework.frame_time
+            if self.death_timer > 5.0:
+                if self in game_world.world[1]:  # 객체가 존재하는지 확인
+                    game_world.remove_object(self)
+                else:
+                    print("Warning: Attempted to remove a non-existing object.")
+                game_framework.screen_color = (0, 0, 0)  # 화면을 원래대로 돌림
             return
 
-        print(f"Updating HP Bar: Current HP = {self.hp}, Max HP = {self.max_hp}")
-        self.hp_bar.update(self.hp, self.max_hp)  # HP 바 업데이트
+        # 보스 HP가 0이면 죽음 상태로 전환
+        if self.hp <= 0 and not self.is_dead :
+            self.is_dead = True
+            game_framework.screen_color = (255, 255, 255)  # 화면을 하얗게 바꿈
+            self.death_timer = 0  # 타이머 초기화
 
+        # 보스가 아직 살아있는 경우 기존 로직 실행
         if self.is_hit:
             self.is_hit_timer -= game_framework.frame_time
             if self.is_hit_timer <= 0:
                 self.is_hit = False
 
-        if self.hp <= 0:
-            self.is_beaten = True
+        self.hp_bar.update(self.hp, self.max_hp)
         self.bt.run()
 
     def draw(self):
-        if self.is_beaten:
-            return  # 보스가 죽었으면 그리기를 중지
+        if self.is_dead:
+            #return  # 보스가 죽었으면 그리기를 중지
+            pass
 
         offset_x = game_framework.screen_offset_x
         offset_y = game_framework.screen_offset_y
